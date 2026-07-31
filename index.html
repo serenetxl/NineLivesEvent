@@ -282,6 +282,7 @@ tr:hover td{background:rgba(201,168,76,.03)}
       <select id="new-player-status">
         <option value="participant">Participant (competing)</option>
         <option value="spectator">Spectator</option>
+        <option value="sponsor">Sponsor</option>
         <option value="eliminated">Eliminated</option>
       </select></div>
     <div id="add-player-error" class="alert alert-danger hidden"></div>
@@ -343,6 +344,8 @@ let S = {
   bettingFormats: [],
   siteOpen: true,
   closedMessage: 'YOU WANT TO GAMBLE NOW?\nPlease wait — the casino is not open yet! 🐱',
+  loanInterestRate: 20,
+  sponsorInterestRate: 10,
 };
 let isAdmin = false;
 let _unsubs = [], _curPTab = 'p-matches', _curATab = 'a-matches';
@@ -471,6 +474,16 @@ function getDebt(name){
 function getNetWorth(name){
   const p=getPlayer(name); if(!p) return 0;
   return p.netWorth||0;
+}
+function getInterestRate(playerOrName){
+  const p=typeof playerOrName==='string'?getPlayer(playerOrName):playerOrName;
+  if(p?.status==='sponsor') return (S.sponsorInterestRate??10)/100;
+  return (S.loanInterestRate??20)/100;
+}
+function fmtRate(playerOrName){
+  const p=typeof playerOrName==='string'?getPlayer(playerOrName):playerOrName;
+  if(p?.status==='sponsor') return (S.sponsorInterestRate??10)+'%';
+  return (S.loanInterestRate??20)+'%';
 }
 
 // ── DEFAULT BETTING FORMATS ────────────────
@@ -1331,7 +1344,7 @@ function renderPlayerBank(){
       <div style="background:var(--bg3);border-radius:var(--radius-sm);padding:10px;text-align:center">
         <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Total Owed</div>
         <div style="font-family:'Cinzel',serif;font-size:18px;color:${debt>0?'var(--red)':'var(--text-dim)'}">${debt>0?'−'+fmt(debt):'—'}</div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${loanPrincipal>0?'principal '+fmt(loanPrincipal)+' + 20% interest':''}</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${loanPrincipal>0?'principal '+fmt(loanPrincipal)+' + '+fmtRate(p)+' interest':''}</div>
       </div>
       <div style="background:var(--bg3);border-radius:var(--radius-sm);padding:10px;text-align:center">
         <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Cap Used</div>
@@ -1347,7 +1360,7 @@ function renderPlayerBank(){
       <input type="number" id="loan-amount" min="1" max="${canBorrow}" placeholder="Amount..." />
     </div>
     <div class="alert alert-gold" style="margin-bottom:12px;font-size:12px">
-      Loan increases your <strong>balance</strong>. Your net worth decreases by the 20% interest owed.
+      Loan increases your <strong>balance</strong>. Your net worth decreases by the <strong>${fmtRate(p)}</strong> interest owed.${p?.status==='sponsor'?' <span style="color:var(--green)">✦ Sponsor rate</span>':''}
     </div>
     <div id="loan-error" class="alert alert-danger hidden"></div>
     <button class="btn btn-gold btn-full" onclick="takeLoan()">Take Loan</button>`
@@ -1369,7 +1382,8 @@ async function takeLoan(){
   // netWorth = newBalance - newDebt (goes DOWN by the interest cost)
   const newBalance       = Math.round((p.balance||0)+amount);
   const newLoanPrincipal = Math.round(loanPrincipal+amount);
-  const newInterestOwed  = Math.round(newLoanPrincipal*0.2);
+  const rate             = getInterestRate(p);
+  const newInterestOwed  = Math.round(newLoanPrincipal*rate);
   const newDebt          = newLoanPrincipal + newInterestOwed;
   const newNetWorth      = newBalance - newDebt;
   await _fsUpd('players',p.id,{
@@ -2055,7 +2069,16 @@ async function submitEditMatch(origId){
 // ── ADMIN: PLAYERS ────────────────────────────
 function renderAPlayers(){
   const sorted=[...S.players].sort((a,b)=>a.name.localeCompare(b.name));
-  let html=`<div style="margin-bottom:14px"><button class="btn btn-gold btn-sm" onclick="document.getElementById('add-player-modal').classList.remove('hidden')">+ Add Player</button></div>
+  let html=`
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+    <button class="btn btn-gold btn-sm" onclick="document.getElementById('add-player-modal').classList.remove('hidden')">+ Add Player</button>
+    <div style="display:flex;align-items:center;gap:6px;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:5px 10px">
+      <span style="font-size:12px;color:var(--text-dim);white-space:nowrap">Starting CC:</span>
+      <input type="number" id="bulk-start-amount" value="1000" min="0" style="width:80px;font-size:12px;padding:3px 6px;background:var(--bg2);border:0.5px solid var(--border);border-radius:4px;color:var(--text)" />
+      <button class="btn btn-sm btn-success" onclick="giveAllCoins(false)" style="white-space:nowrap">Set all</button>
+      <button class="btn btn-sm" onclick="giveAllCoins(true)" style="white-space:nowrap;font-size:11px">Participants only</button>
+    </div>
+  </div>
   <div class="tbl-wrap"><table><thead><tr>
     <th>Player</th><th>Status</th>
     <th style="text-align:right">Balance</th>
@@ -2072,6 +2095,7 @@ function renderAPlayers(){
       <td><select style="width:auto;font-size:12px;padding:4px 8px" onchange="changeStatus('${p.id}',this.value)">
         <option ${(p.status==='participant'||p.status==='active')?'selected':''} value="participant">Participant</option>
         <option ${p.status==='spectator'?'selected':''} value="spectator">Spectator</option>
+        <option ${p.status==='sponsor'?'selected':''} value="sponsor">Sponsor 💰</option>
         <option ${p.status==='eliminated'?'selected':''} value="eliminated">Eliminated</option>
       </select></td>
       <td style="text-align:right;color:${(p.balance||0)<0?'var(--red)':'inherit'}">${fmt(p.balance||0)}</td>
@@ -2092,6 +2116,29 @@ function renderAPlayers(){
 }
 
 async function changeStatus(id,status){await _fsUpd('players',id,{status});}
+
+async function giveAllCoins(participantsOnly){
+  const amount=parseInt(document.getElementById('bulk-start-amount')?.value)||0;
+  if(amount<=0){alert('Enter a valid amount');return;}
+  const targets=participantsOnly
+    ?S.players.filter(p=>p.status==='participant'||p.status==='active')
+    :S.players;
+  if(!targets.length){alert('No players found');return;}
+  const who=participantsOnly?'all participants':'all players';
+  if(!confirm(`Set starting balance to ${fmt(amount)} CC for ${targets.length} ${who}?\n\nThis overwrites their current balance.`))return;
+  const CHUNK=400;
+  for(let i=0;i<targets.length;i+=CHUNK){
+    const batch=writeBatch(_db);
+    targets.slice(i,i+CHUNK).forEach(p=>{
+      batch.update(doc(_db,'players',p.id),{
+        balance:  amount,
+        netWorth: amount-(p.debt||0),
+      });
+    });
+    await batch.commit();
+  }
+  renderAPlayers();
+}
 
 async function deletePlayer(id,name){
   const pending=S.bets.filter(b=>norm(b.playerName)===norm(name)&&b.result===null);
@@ -2169,7 +2216,7 @@ async function submitEditBalance(name){
   const loanPrincipal=rawPrincipal!==null&&rawPrincipal!==''
     ? Math.max(0,parseInt(rawPrincipal)||0)
     : (p.loanPrincipal||0);
-  const interestOwed=Math.round(loanPrincipal*0.2);
+  const interestOwed=Math.round(loanPrincipal*getInterestRate(p));
   const debt=loanPrincipal+interestOwed;
   const netWorth=balance-debt;  // netWorth also increases by bonus amount
   await _fsUpd('players',p.id,{balance,loanPrincipal,interestOwed,debt,netWorth});
@@ -2575,6 +2622,16 @@ function renderASettings(){
         <div class="fg"><label class="lbl">Head-to-Head min payout (×)</label>
           <input type="number" id="evt-betmult" value="${S.betMult||2}" min="1" max="10" /></div>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fg"><label class="lbl">Standard loan interest rate (%)</label>
+          <input type="number" id="evt-interest" value="${S.loanInterestRate??20}" min="0" max="100" step="1" />
+          <div style="font-size:11px;color:var(--text-dim);margin-top:3px">For Participants &amp; Spectators</div>
+        </div>
+        <div class="fg"><label class="lbl">Sponsor loan interest rate (%)</label>
+          <input type="number" id="evt-sponsor-interest" value="${S.sponsorInterestRate??10}" min="0" max="100" step="1" />
+          <div style="font-size:11px;color:var(--text-dim);margin-top:3px">For Sponsors only 💰</div>
+        </div>
+      </div>
       <div id="evt-setup-status" style="font-size:12px;margin-bottom:8px"></div>
       <button class="btn btn-gold btn-sm" onclick="saveEventSetup()">Save event settings</button>
     </div>
@@ -2706,11 +2763,13 @@ async function saveEventSetup(){
   const icon=(document.getElementById('evt-icon')?.value||'🐱').trim();
   const pw=(document.getElementById('evt-adminpw')?.value||'').trim();
   const mult=parseInt(document.getElementById('evt-betmult')?.value)||2;
+  const interestRate=parseFloat(document.getElementById('evt-interest')?.value)??20;
+  const sponsorRate=parseFloat(document.getElementById('evt-sponsor-interest')?.value)??10;
   if(!title){alert('Event name cannot be blank.');return;}
   if(!pw){alert('Admin password cannot be blank.');return;}
   const statusEl=document.getElementById('evt-setup-status');
   if(statusEl){statusEl.style.color='var(--gold)';statusEl.textContent='Saving...';}
-  await _fsCfg({eventTitle:title,eventSubtitle:subtitle,eventIcon:icon,adminPw:pw,betMult:mult});
+  await _fsCfg({eventTitle:title,eventSubtitle:subtitle,eventIcon:icon,adminPw:pw,betMult:mult,loanInterestRate:interestRate,sponsorInterestRate:sponsorRate});
   if(statusEl){statusEl.style.color='var(--green)';statusEl.textContent='✅ Event settings saved!';}
   setTimeout(()=>{if(statusEl)statusEl.textContent='';},3000);
 }
@@ -2894,6 +2953,8 @@ function subscribeAll(){
       if(d.eventIcon)     S.eventIcon     = d.eventIcon;
       if(d.adminPw)       S.adminPw       = d.adminPw;
       if(d.betMult)       S.betMult       = d.betMult;
+      if(d.loanInterestRate!=null)    S.loanInterestRate    = d.loanInterestRate;
+      if(d.sponsorInterestRate!=null) S.sponsorInterestRate = d.sponsorInterestRate;
       if(d.bettingFormats && d.bettingFormats.length) S.bettingFormats = d.bettingFormats;
       S.siteOpen = d.siteOpen !== false; // default true if not set
       if(d.closedMessage) S.closedMessage = d.closedMessage;
@@ -2990,7 +3051,7 @@ Object.assign(globalThis,{
   submitBet: submitBetWithDeduct,
   toggleBetting, declareWinner, reopenMatch, declareWalkover, deleteMatch,
   openAddMatchModal, editMatch, submitAddMatch, submitEditMatch,
-  changeStatus, deletePlayer, setLbSort, submitAddPlayer,
+  changeStatus, deletePlayer, setLbSort, submitAddPlayer, giveAllCoins,
   openEditBalance, submitEditBalance,
   toggleLoanOpen, addDebtCapRound, removeDebtCapRound,
   reopenMatch, takeLoan,
