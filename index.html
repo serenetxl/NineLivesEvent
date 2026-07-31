@@ -1959,8 +1959,6 @@ function editMatch(id){
       <span style="font-size:13px">${p.name}</span>
     </label>`).join('');
 
-  const typeLabel=m.matchType==='ranked'?'Exact Ranking':m.matchType==='survivors'?'Top 3 Survivors':'Head-to-Head';
-
   document.getElementById('add-match-content').innerHTML=`
     <div class="fg"><label class="lbl">Match ID</label><input type="text" id="nm-id" value="${m.id}" readonly style="opacity:.6" /></div>
     <div class="fg"><label class="lbl">Round label</label><input type="text" id="nm-round" value="${m.roundLabel||''}" /></div>
