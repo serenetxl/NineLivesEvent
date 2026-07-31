@@ -500,9 +500,37 @@ const DEFAULT_FORMATS = [
     selections: 3, orderMatters: false, allowDuplicates: false,
     winCondition: 'exact-set', payoutType: 'fixed', fixedMult: 5, tiers: [],
   },
+  {
+    id: 'first3-eliminated',
+    name: 'First 3 Eliminated',
+    description: 'Pick the 3 contestants who will be eliminated first. Order does not matter.',
+    instructions: 'Pick exactly 3 contestants who will be eliminated first. Order does not matter — just get the right 3 names!',
+    selections: 3, orderMatters: false, allowDuplicates: false,
+    winCondition: 'exact-set', payoutType: 'fixed', fixedMult: 5, tiers: [],
+  },
 ];
 
-// ── SEED (run once on empty DB) ────────────
+// ── FORMAT RESOLVER ───────────────────────
+// Returns the format config for a match, checking S.bettingFormats first,
+// then DEFAULT_FORMATS as fallback. Works for built-in and custom formats.
+function getFormat(m){
+  if(!m) return null;
+  const allFormats=S.bettingFormats.length?S.bettingFormats:DEFAULT_FORMATS;
+  // Match has a stored formatId — use it
+  if(m.formatId){
+    const f=allFormats.find(f=>f.id===m.formatId);
+    if(f) return f;
+  }
+  // Legacy matchType mapping
+  if(m.matchType==='ranked')    return allFormats.find(f=>f.id==='exact-ranking')||DEFAULT_FORMATS[1];
+  if(m.matchType==='survivors') return allFormats.find(f=>f.id==='top3-survivors')||DEFAULT_FORMATS[2];
+  if(m.matchType==='standard')  return allFormats.find(f=>f.id==='head-to-head')||DEFAULT_FORMATS[0];
+  return null;
+}
+// Derived helpers
+function isMultiPick(m){ const f=getFormat(m); return f&&f.winCondition!=='single-winner'; }
+function isExactOrder(m){ const f=getFormat(m); return f?.winCondition==='exact-order'; }
+function isExactSet(m){ const f=getFormat(m); return f?.winCondition==='exact-set'; }
 async function initDefault(){
   try {
     const cfgSnap = await getDoc(_cfgDoc());
@@ -531,7 +559,14 @@ async function initDefault(){
         await updateDoc(_cfgDoc(),{bettingFormats: DEFAULT_FORMATS});
         console.log('initDefault: patched bettingFormats into existing config.');
       } else {
-        console.log('initDefault: config exists, skipping seed.');
+        // Patch in first3-eliminated if it's a new built-in format not yet in DB
+        const hasElim=d.bettingFormats.find(f=>f.id==='first3-eliminated');
+        if(!hasElim){
+          await updateDoc(_cfgDoc(),{bettingFormats:[...d.bettingFormats,DEFAULT_FORMATS[3]]});
+          console.log('initDefault: patched first3-eliminated format.');
+        } else {
+          console.log('initDefault: config exists, skipping seed.');
+        }
       }
     }
   } catch(e){ console.warn('initDefault error:', e); }
@@ -754,9 +789,10 @@ function renderPMatches(){
       myBetsSummary=`<div class="alert alert-gold" style="margin:6px 0;font-size:12px">${lines}</div>`;
     }
     const isRanked=m.matchType==='ranked';
-    const isSurv=m.matchType==='survivors';
-    const isMulti=isRanked||isSurv;
-    const formatLabel=isRanked?'Exact Ranking':isSurv?'Top 3 Survivors':null;
+    const isSurv=m.matchType==='survivors'||isExactSet(m);
+    const isMulti=isMultiPick(m);
+    const fmt_pm=getFormat(m);
+    const formatLabel=fmt_pm?.name||(isRanked?'Exact Ranking':isSurv?'Top 3 Survivors':null);
     const contestants=(m.contestants||m.p1||'').split(',').map(s=>s.trim()).filter(Boolean);
     const totalPot=S.bets.filter(b=>b.matchId===m.id&&b.result!=='voided').reduce((s,b)=>s+b.amount,0);
 
@@ -1004,26 +1040,33 @@ function renderMyBets(){
     } else if(b.betType==='survivors'){
       pickDisplay=Array.isArray(b.pickArray)&&b.pickArray.length?b.pickArray.join(', '):(b.pick||'').split(',').map(s=>s.trim()).filter(Boolean).join(', ');
     }
-    const isSurvMatch=m?.matchType==='survivors';
-    const isRankedMatch=m?.matchType==='ranked';
-    const matchLabel=m?(isRankedMatch?m.id+' (Exact Ranking)':isSurvMatch?m.id+' (Top 3 Survivors)':m.id+' · '+m.p1+' vs '+m.p2):b.matchId;
+    const isSurvMatch=isExactSet(m);
+    const isRankedMatch=isExactOrder(m);
+    const fmt_mb=getFormat(m);
+    const matchLabel=m?(isRankedMatch||isSurvMatch?m.id+' ('+(fmt_mb?.name||m.matchType)+')':m.id+' · '+m.p1+' vs '+m.p2):b.matchId;
     html+=`<tr><td style="font-size:12px">${matchLabel}</td><td style="font-weight:500;font-size:12px">${pickDisplay}</td><td style="text-align:right">${fmt(b.amount)}</td><td style="text-align:right;font-size:12px">${oddsHtml}</td><td style="text-align:right">${resHtml}</td></tr>`;
   });
   html+=`</tbody></table></div>`;
   document.getElementById('p-mybets').innerHTML=html;
 }
 
-// ── RANKED BET MODAL (Finals) ─────────────────
+// ── MULTI-PICK BET MODAL ─────────────────
 function openRankedBetModal(matchId){
   const m=S.matches.find(x=>x.id===matchId);if(!m)return;
-  const isSurv=m.matchType==='survivors';
+  const fmt_=getFormat(m);
+  const isOrder=isExactOrder(m);
+  const isSet=isExactSet(m);
+  const formatName=fmt_?.name||(isOrder?'Exact Ranking':'Multi-pick');
+  const instructions=fmt_?.instructions||(isOrder?'Pick the contestants in the exact finishing order.':'Pick exactly 3 names. Order does not matter.');
+  const mult=fmt_?.fixedMult||5;
+  const selections=fmt_?.selections||3;
   const p=getPlayer(S.currentUser);
   const bal=(p?.balance)||0;
   const contestants=(m.contestants||m.p1||'').split(',').map(s=>s.trim()).filter(Boolean);
   const priorBets=S.bets.filter(b=>b.matchId===matchId&&norm(b.playerName)===norm(S.currentUser)&&b.result!=='voided');
   const priorHtml=priorBets.length
     ?`<div class="alert alert-gold" style="margin-bottom:12px;font-size:12px"><strong>Your existing bets:</strong><br>${priorBets.map(b=>{
-        if(b.betType==='survivors'){
+        if(b.betType==='survivors'||b.betType==='exact-set'){
           const names=Array.isArray(b.pickArray)&&b.pickArray.length?b.pickArray.join(', '):(b.pick||'').split(',').map(s=>s.trim()).filter(Boolean).join(', ');
           return `${fmt(b.amount)} CC — ${names||b.pick}`;
         }
@@ -1032,59 +1075,56 @@ function openRankedBetModal(matchId){
       }).join('<br>')}</div>`:'';
 
   let formHtml='';
-  if(isSurv){
-    // Get multiplier from format config if available
-    const survFormat=(S.bettingFormats||[]).find(f=>f.id==='top3-survivors')||{fixedMult:5};
-    const mult=survFormat.fixedMult||5;
+  if(isSet){
     const checkboxList=contestants.map(n=>`
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 10px;background:var(--bg3);border-radius:var(--radius-sm);border:0.5px solid var(--border)">
-        <input type="checkbox" value="${n}" id="surv-pick-${n.replace(/[^a-zA-Z0-9]/g,'_')}" style="width:auto;margin:0" onchange="_updateSurvPickCount()" />
+        <input type="checkbox" value="${n}" id="surv-pick-${n.replace(/[^a-zA-Z0-9]/g,'_')}" style="width:auto;margin:0" onchange="_updateSurvPickCount(${selections})" />
         <span style="font-family:'Cinzel',serif;font-size:13px">${n}</span>
       </label>`).join('');
     formHtml=`
       <div class="fg">
-        <label class="lbl">Pick exactly 3 survivors <span id="surv-pick-count" style="color:var(--gold)">(0 / 3)</span></label>
+        <label class="lbl">Pick exactly ${selections} names <span id="surv-pick-count" style="color:var(--gold)">(0 / ${selections})</span></label>
         <div style="display:flex;flex-direction:column;gap:6px">${checkboxList}</div>
       </div>
       <div class="fg"><label class="lbl">Bet amount — balance: ${fmt(bal)} CC</label>
         <input type="number" id="bet-amount" min="1" max="${bal}" placeholder="Amount..." /></div>
       <div class="alert alert-gold" style="margin-bottom:14px;font-size:12px">
-        Each correct name → <strong>${mult}×</strong> your bet back. Pick all 3 right to get the full ${mult}× payout.
+        Each correct name → <strong>${mult}×/${selections}</strong> payout. Get all ${selections} right → full <strong>${mult}×</strong>.
       </div>`;
   } else {
     const opts=contestants.map(n=>`<option value="${n}">${n}</option>`).join('');
+    const payoutNote=(()=>{if(fmt_?.payoutType==='tiered'&&fmt_.tiers?.length){return fmt_.tiers.map(t=>`${t.correct} correct → ${t.mult}×`).join(' · ');}return `Get ALL ${selections} placements correct in exact order → ${fmt_?.fixedMult||10}× payout.`;})();
     formHtml=`
       <div class="fg"><label class="lbl">🥇 1st place</label><select id="rank-1">${opts}</select></div>
       <div class="fg"><label class="lbl">🥈 2nd place</label><select id="rank-2">${opts}</select></div>
       <div class="fg"><label class="lbl">🥉 3rd place</label><select id="rank-3">${opts}</select></div>
       <div class="fg"><label class="lbl">Bet amount — balance: ${fmt(bal)} CC</label>
         <input type="number" id="bet-amount" min="1" max="${bal}" placeholder="Amount..." /></div>
-      <div class="alert alert-gold" style="margin-bottom:14px;font-size:12px">
-        ${(()=>{const rf=(S.bettingFormats||[]).find(f=>f.id==='exact-ranking');if(rf?.payoutType==='tiered'&&rf.tiers?.length){return rf.tiers.map(t=>`${t.correct} correct → ${t.mult}×`).join(' · ');}return `Get ALL 3 placements correct in exact order → ${rf?.fixedMult||10}× payout.`;})()}
-      </div>`;
+      <div class="alert alert-gold" style="margin-bottom:14px;font-size:12px">${payoutNote}</div>`;
   }
 
   document.getElementById('bet-modal-content').innerHTML=`
     <div style="background:var(--bg3);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:13px">
-      <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:4px">${m.id} — ${isSurv?'Top 3 Survivors':'Exact Ranking'}</div>
-      <div style="color:var(--text-dim);font-size:12px">${isSurv?'Pick exactly 3 contestants who will survive. Order does not matter.':'Pick the contestants in the exact finishing order.'}</div>
+      <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:4px">${m.id} — ${formatName}</div>
+      <div style="color:var(--text-dim);font-size:12px">${instructions}</div>
     </div>
     ${priorHtml}
     ${formHtml}
     <div id="bet-error" class="alert alert-danger hidden"></div>
     <div class="btn-row">
       <button class="btn" style="flex:1" onclick="closeModal('bet-modal')">Cancel</button>
-      <button class="btn btn-gold" style="flex:1" onclick="${isSurv?'submitSurvivorsBet':'submitRankedBet'}('${matchId}')">Confirm Bet</button>
+      <button class="btn btn-gold" style="flex:1" onclick="${isSet?'submitSurvivorsBet':'submitRankedBet'}('${matchId}')">Confirm Bet</button>
     </div>`;
   document.getElementById('bet-modal').classList.remove('hidden');
-  if(!isSurv) setTimeout(()=>_refreshRankOpts(),50);
+  if(!isSet) setTimeout(()=>_refreshRankOpts(),50);
 }
 
-function _updateSurvPickCount(){
+function _updateSurvPickCount(max){
+  max=max||3;
   const checked=Array.from(document.querySelectorAll('[id^="surv-pick-"]:checked'));
   const el=document.getElementById('surv-pick-count');
-  if(checked.length>3){checked[checked.length-1].checked=false;if(el)el.textContent='(3 / 3 max)';return;}
-  if(el) el.textContent=`(${checked.length} / 3)`;
+  if(checked.length>max){checked[checked.length-1].checked=false;if(el)el.textContent=`(${max} / ${max} max)`;return;}
+  if(el) el.textContent=`(${checked.length} / ${max})`;
 }
 
 function _refreshRankOpts(){
@@ -1093,9 +1133,12 @@ function _refreshRankOpts(){
 }
 
 async function submitSurvivorsBet(matchId){
+  const m=S.matches.find(x=>x.id===matchId);
+  const fmt_=getFormat(m);
+  const selections=fmt_?.selections||3;
   const checked=Array.from(document.querySelectorAll('[id^="surv-pick-"]:checked')).map(c=>c.value);
   const amount=parseInt(document.getElementById('bet-amount')?.value)||0;
-  if(checked.length!==3){showErr('bet-error','Select exactly 3 survivors');return;}
+  if(checked.length!==selections){showErr('bet-error',`Select exactly ${selections} names`);return;}
   const p=getPlayer(S.currentUser);
   const bal=(p?.balance)||0;
   if(!amount||amount<=0){showErr('bet-error','Enter a valid amount');return;}
@@ -1106,14 +1149,14 @@ async function submitSurvivorsBet(matchId){
   if(btn){btn.disabled=true;btn.textContent='Placing...';}
   const batch=writeBatch(_db);
   const betId='b'+Date.now();
-  batch.set(doc(_db,'bets',betId),{matchId,playerName:S.currentUser,pick,pickArray,amount,result:null,betType:'survivors',stakeInBalance:false});
+  const formatId=m?.formatId||'top3-survivors';
+  batch.set(doc(_db,'bets',betId),{matchId,playerName:S.currentUser,pick,pickArray,amount,result:null,betType:'survivors',formatId,stakeInBalance:false});
   if(p?.id){
     const newBal=Math.round(bal-amount);
     batch.set(doc(_db,'players',p.id),{balance:newBal,netWorth:newBal-(p.debt||0)},{merge:true});
   }
   await batch.commit();
-  const m=S.matches.find(x=>x.id===matchId);
-  _postDiscord('🎲 **'+S.currentUser+'** bet **'+fmt(amount)+' CC** — Survivors: '+pickArray.join(', ')+' ('+matchId+')');
+  _postDiscord('🎲 **'+S.currentUser+'** bet **'+fmt(amount)+' CC** — '+(fmt_?.name||'Pick')+': '+pickArray.join(', ')+' ('+matchId+')');
   closeModal('bet-modal');
 }
 
@@ -1147,7 +1190,7 @@ async function submitRankedBet(matchId){
 // ── BET MODAL ─────────────────────────────────
 function openBetModal(matchId){
   const m=S.matches.find(x=>x.id===matchId);if(!m)return;
-  if(m.matchType==='ranked'||m.matchType==='survivors'){openRankedBetModal(matchId);return;}
+  if(isMultiPick(m)){openRankedBetModal(matchId);return;}
   const spendable=getSpendable(S.currentUser);
   const user=norm(S.currentUser);
   const isP1=user===norm(m.p1), isP2=user===norm(m.p2);
@@ -1398,9 +1441,10 @@ function renderLiveBets(containerId){
     const bets=(matchMap[m.id]?.bets||[]);
     const activeBets=bets.filter(b=>b.result===null);
     const isRanked=m.matchType==='ranked';
-    const isSurv=m.matchType==='survivors';
-    const isMulti=isRanked||isSurv;
-    const formatLabel=isRanked?'Exact Ranking':isSurv?'Top 3 Survivors':null;
+    const isSurv=isExactSet(m);
+    const isMulti=isMultiPick(m);
+    const fmt_lb=getFormat(m);
+    const formatLabel=fmt_lb?.name||(isRanked?'Exact Ranking':m.matchType==='survivors'?'Top 3 Survivors':null);
     const contestants=(m.contestants||m.p1||'').split(',').map(s=>s.trim()).filter(Boolean);
 
     // Build pot data
@@ -1563,17 +1607,17 @@ function renderAMatches(){
         <span class="badge ${m.status==='done'?'badge-done':m.bettingOpen?'badge-open':'badge-closed'}">${m.status==='done'?'Finished':m.bettingOpen?'Betting open':'Betting closed'}</span>
       </div>
       ${(()=>{
-        const isR=m.matchType==='ranked';
-        const isSurv=m.matchType==='survivors';
-        const isMulti=isR||isSurv;
+        const fmt_=getFormat(m);
+        const isMulti=isMultiPick(m);
+        const isSet_=isExactSet(m);
         const cs=(m.contestants||m.p1||'').split(',').map(s=>s.trim()).filter(Boolean);
-        const typeLabel=isR?'Exact Ranking':isSurv?'Top 3 Survivors':null;
+        const typeLabel=fmt_?.name||(m.matchType==='ranked'?'Exact Ranking':m.matchType==='survivors'?'Top 3 Survivors':null);
         const pot=isMulti?S.bets.filter(b=>b.matchId===m.id&&b.result!=='voided').reduce((s,b)=>s+b.amount,0):(p1p+p2p);
         if(isMulti) return `<div style="padding:6px 0 8px">
           ${typeLabel?`<div style="font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">${typeLabel}</div>`:''}
           <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">${cs.map(n=>`<span style="background:var(--bg3);border-radius:var(--radius-sm);padding:4px 10px;font-size:12px;font-family:'Cinzel',serif">${n}</span>`).join('')}</div>
           <div style="font-size:11px;color:var(--text-dim)">${bc} bet(s) · pot: ${fmt(pot)} CC</div>
-          ${m.winner&&m.winner!=='Walkover'?`<div class="alert alert-success" style="margin-top:6px;padding:5px 10px;font-size:12px">Result: ${isSurv?m.winner:m.winner.split('|').map(r=>{const[p,n]=r.split(':');const me=['','🥇','🥈','🥉'];return me[parseInt(p)]+' '+n;}).join(' · ')}</div>`:''}
+          ${m.winner&&m.winner!=='Walkover'?`<div class="alert alert-success" style="margin-top:6px;padding:5px 10px;font-size:12px">Result: ${isSet_?m.winner:m.winner.split('|').map(r=>{const[p,n]=r.split(':');const me=['','🥇','🥈','🥉'];return me[parseInt(p)]+' '+n;}).join(' · ')}</div>`:''}
         </div>`;
         return `<div class="match-vs" style="margin:8px 0">
           <div class="match-player"><div class="match-player-name ${m.winner===m.p1?'winner':''}">${m.p1}${m.winner===m.p1?' ✦':''}</div><div class="match-pot">${fmt(p1p)} CC</div></div>
@@ -1586,16 +1630,12 @@ function renderAMatches(){
       <div class="btn-row">
         ${m.status!=='done'&&m.bettingOpen?`<button class="btn btn-sm btn-danger" onclick="toggleBetting('${m.id}',false)">Close betting</button>`:''}
         ${m.status!=='done'&&!m.bettingOpen?`<button class="btn btn-sm btn-success" onclick="toggleBetting('${m.id}',true)">Open betting</button>`:''}
-        ${m.status!=='done'&&m.matchType==='standard'?`
+        ${m.status!=='done'&&!isMultiPick(m)?`
           <button class="btn btn-sm btn-success" onclick="declareWinner('${m.id}','${m.p1}')">✦ ${m.p1} wins</button>
           <button class="btn btn-sm btn-success" onclick="declareWinner('${m.id}','${m.p2}')">✦ ${m.p2} wins</button>
           <button class="btn btn-sm" onclick="declareWalkover('${m.id}')">Walkover</button>`:''}
-        ${m.status!=='done'&&(m.matchType==='ranked'||m.matchType==='survivors')?`
+        ${m.status!=='done'&&isMultiPick(m)?`
           <button class="btn btn-sm btn-success" onclick="openRankedResultModal('${m.id}')">✦ Set result</button>
-          <button class="btn btn-sm" onclick="declareWalkover('${m.id}')">Walkover</button>`:''}
-        ${m.status!=='done'&&m.matchType!=='standard'&&m.matchType!=='ranked'&&m.matchType!=='survivors'?`
-          <button class="btn btn-sm btn-success" onclick="declareWinner('${m.id}','${m.p1}')">✦ ${m.p1} wins</button>
-          <button class="btn btn-sm btn-success" onclick="declareWinner('${m.id}','${m.p2}')">✦ ${m.p2} wins</button>
           <button class="btn btn-sm" onclick="declareWalkover('${m.id}')">Walkover</button>`:''}
         ${m.status==='done'?`<button class="btn btn-sm btn-danger" onclick="reopenMatch('${m.id}')">↩ Reopen</button>`:''}
         <button class="btn btn-sm" onclick="editMatch('${m.id}')">Edit</button>
@@ -1611,21 +1651,22 @@ async function toggleBetting(id,open){await _fsUpd('matches',id,{bettingOpen:ope
 
 function openRankedResultModal(matchId){
   const m=S.matches.find(x=>x.id===matchId);if(!m)return;
+  const fmt_=getFormat(m);
+  const isSet_=isExactSet(m);
+  const formatName=fmt_?.name||(isExactOrder(m)?'Exact Ranking':'Multi-pick');
+  const selections=fmt_?.selections||3;
   const contestants=(m.contestants||m.p1||'').split(',').map(s=>s.trim()).filter(Boolean);
-  const isSurv=m.matchType==='survivors';
   const opts=contestants.map(n=>`<option value="${n}">${n}</option>`).join('');
-  const formatLabel=isSurv?'Top 3 Survivors':'Exact Ranking';
 
   let formHtml='';
-  if(isSurv){
-    formHtml=`<div class="fg"><label class="lbl">Select the 3 survivors</label>
+  if(isSet_){
+    formHtml=`<div class="fg"><label class="lbl">Select the ${selections} correct names <span id="surv-res-count" style="color:var(--gold)">(0 / ${selections})</span></label>
       <div style="display:flex;flex-direction:column;gap:6px">
         ${contestants.map(n=>`<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 10px;background:var(--bg3);border-radius:var(--radius-sm);border:0.5px solid var(--border)">
-          <input type="checkbox" id="surv-res-${n.replace(/\s+/g,'_')}" value="${n}" style="width:auto;margin:0" />
+          <input type="checkbox" id="surv-res-${n.replace(/[^a-zA-Z0-9]/g,'_')}" value="${n}" style="width:auto;margin:0" />
           <span style="font-family:'Cinzel',serif;font-size:13px">${n}</span>
         </label>`).join('')}
       </div>
-      <div id="surv-res-count" style="font-size:12px;color:var(--text-dim);margin-top:6px">0 / 3 selected</div>
     </div>`;
   } else {
     formHtml=`
@@ -1636,7 +1677,7 @@ function openRankedResultModal(matchId){
 
   document.getElementById('add-match-content').innerHTML=`
     <div class="modal-title" style="margin-bottom:4px">Set Result — ${matchId}</div>
-    <div style="font-size:12px;color:var(--gold);margin-bottom:14px">${formatLabel}</div>
+    <div style="font-size:12px;color:var(--gold);margin-bottom:14px">${formatName}</div>
     ${formHtml}
     <div class="btn-row" style="margin-top:8px">
       <button class="btn" style="flex:1" onclick="closeModal('add-match-modal')">Cancel</button>
@@ -1644,14 +1685,13 @@ function openRankedResultModal(matchId){
     </div>`;
   document.getElementById('add-match-modal').classList.remove('hidden');
 
-  // Wire survivor checkbox count
-  if(isSurv){
+  if(isSet_){
     document.querySelectorAll('[id^="surv-res-"]').forEach(cb=>{
       cb.addEventListener('change',()=>{
         const checked=Array.from(document.querySelectorAll('[id^="surv-res-"]:checked'));
+        if(checked.length>selections){cb.checked=false;return;}
         const msg=document.getElementById('surv-res-count');
-        if(checked.length>3){cb.checked=false;return;}
-        if(msg) msg.textContent=`${checked.length} / 3 selected`;
+        if(msg) msg.textContent=`(${checked.length} / ${selections})`;
       });
     });
   }
@@ -1659,30 +1699,27 @@ function openRankedResultModal(matchId){
 
 async function declareRankedResult(id){
   const m=S.matches.find(x=>x.id===id);if(!m)return;
-  const isSurv=m.matchType==='survivors';
+  const fmt_=getFormat(m);
+  const isSet_=isExactSet(m);
+  const selections=fmt_?.selections||3;
   const batch=writeBatch(_db);
   let resultStr='';
 
-  if(isSurv){
-    const survivors=Array.from(document.querySelectorAll('[id^="surv-res-"]:checked')).map(c=>c.value);
-    if(survivors.length!==3){alert('Select exactly 3 survivors');return;}
-    const sortedResult=[...survivors].sort();
+  if(isSet_){
+    const picked=Array.from(document.querySelectorAll('[id^="surv-res-"]:checked')).map(c=>c.value);
+    if(picked.length!==selections){alert(`Select exactly ${selections} names`);return;}
+    const sortedResult=[...picked].sort();
     resultStr=sortedResult.join(',');
 
-    // Get multiplier from format config (reads live S.bettingFormats, falls back to 5)
-    const survFormat=(S.bettingFormats||[]).find(f=>f.id==='top3-survivors')||{fixedMult:5};
-    const fixedMult=survFormat.fixedMult||5;
+    // Read multiplier from the match's actual format config
+    const fixedMult=fmt_?.fixedMult||5;
 
-    const survivorBets=S.bets.filter(b=>b.matchId===id&&b.result===null&&(b.betType==='survivors'||b.betType==='exact-set'));
-    survivorBets.forEach(b=>{
+    const setBets=S.bets.filter(b=>b.matchId===id&&b.result===null&&(b.betType==='survivors'||b.betType==='exact-set'));
+    setBets.forEach(b=>{
       const betSorted=(Array.isArray(b.pickArray)&&b.pickArray.length?[...b.pickArray].sort():(b.pick||'').split(',').map(s=>s.trim()).filter(Boolean).sort());
-      // Count how many of their 3 picks are in the correct survivors list
       const correctCount=betSorted.filter(name=>sortedResult.includes(name)).length;
-      // Pay per correct name: correctCount × fixedMult × (stake / 3)
-      // So 1 correct = fixedMult/3 × stake, 2 correct = 2×fixedMult/3 × stake, 3 correct = fixedMult × stake
-      // Simpler and fairer: just scale linearly. If all 3 correct you get fixedMult × stake total.
       const won=correctCount>0;
-      const payoutMult=correctCount>0?Math.round((fixedMult*correctCount/3)*100)/100:0;
+      const payoutMult=correctCount>0?Math.round((fixedMult*correctCount/selections)*100)/100:0;
       batch.update(doc(_db,'bets',b.id),{result:won?'won':'lost',survivorResult:resultStr,correctNames:correctCount,settledOdds:won?payoutMult:null});
       if(won){
         const p=getPlayer(b.playerName);
@@ -1699,6 +1736,8 @@ async function declareRankedResult(id){
     const r3=document.getElementById('res-3')?.value;
     if(new Set([r1,r2,r3]).size!==3){alert('Each position must be different');return;}
     resultStr=`1:${r1}|2:${r2}|3:${r3}`;
+    // Read tiers from format config
+    const tiers=fmt_?.payoutType==='tiered'&&fmt_.tiers?.length?fmt_.tiers:[{correct:3,mult:fmt_?.fixedMult||10}];
     const rankedBets=S.bets.filter(b=>b.matchId===id&&b.result===null&&(b.betType==='ranked'||!b.betType));
     rankedBets.forEach(b=>{
       const picks={};
@@ -1706,7 +1745,8 @@ async function declareRankedResult(id){
       const actual={1:r1,2:r2,3:r3};
       let correct=0;
       [1,2,3].forEach(pos=>{if(picks[String(pos)]===actual[pos])correct++;});
-      const mult=correct===3?10:0;
+      const tier=tiers.slice().sort((a,b)=>b.correct-a.correct).find(t=>correct>=t.correct);
+      const mult=tier?tier.mult:0;
       batch.update(doc(_db,'bets',b.id),{result:mult>0?'won':'lost',rankedResult:resultStr,correctPositions:correct,settledOdds:mult||null});
       if(mult>0){
         const p=getPlayer(b.playerName);
@@ -1835,10 +1875,12 @@ function _nmSelectAll(checked){
 }
 
 function toggleMatchTypeFields(){
-  const t=document.getElementById('nm-type')?.value;
+  const formatId=document.getElementById('nm-type')?.value;
+  const allFormats=S.bettingFormats.length?S.bettingFormats:DEFAULT_FORMATS;
+  const fmt=allFormats.find(f=>f.id===formatId);
+  const isMulti=fmt&&fmt.winCondition!=='single-winner';
   const sf=document.getElementById('nm-standard-fields');
   const rf=document.getElementById('nm-ranked-fields');
-  const isMulti=(t==='ranked'||t==='survivors');
   if(sf) sf.style.display=isMulti?'none':'';
   if(rf) rf.style.display=isMulti?'':'none';
 }
@@ -1852,15 +1894,16 @@ function openAddMatchModal(){
       <input type="checkbox" value="${p.name}" id="nm-cb-${p.name.replace(/\s+/g,'_')}" style="width:auto;margin:0;cursor:pointer" />
       <span style="font-size:13px">${p.name}</span>
     </label>`).join('');
+
+  // Build format dropdown from live S.bettingFormats (includes any custom formats admin added)
+  const formats=S.bettingFormats.length?S.bettingFormats:DEFAULT_FORMATS;
+  const formatOpts=formats.map(f=>`<option value="${f.id}">${f.name}${f.description?' — '+f.description:''}</option>`).join('');
+
   document.getElementById('add-match-content').innerHTML=`
     <div class="fg"><label class="lbl">Match ID (e.g. R1, WC1)</label><input type="text" id="nm-id" placeholder="R1" /></div>
     <div class="fg"><label class="lbl">Round label</label><input type="text" id="nm-round" placeholder="e.g. Round 1, Catlympics" /></div>
-    <div class="fg"><label class="lbl">Match type / Betting format</label>
-      <select id="nm-type" onchange="toggleMatchTypeFields()">
-        <option value="standard">Head-to-Head (2 players, pick winner, crowd odds)</option>
-        <option value="ranked">Exact Ranking (multi-player, pick correct order, tiered payout)</option>
-        <option value="survivors">Top 3 Survivors (multi-player, pick 3 names, any order)</option>
-      </select>
+    <div class="fg"><label class="lbl">Betting format</label>
+      <select id="nm-type" onchange="toggleMatchTypeFields()">${formatOpts}</select>
     </div>
     <div id="nm-standard-fields">
       <div class="fg"><label class="lbl">Player 1</label><select id="nm-p1"><option value="">— Select —</option>${pOpts}</select></div>
@@ -1887,6 +1930,7 @@ function openAddMatchModal(){
       <button class="btn btn-gold" style="flex:1" onclick="submitAddMatch()">Add Match</button>
     </div>`;
   document.getElementById('add-match-modal').classList.remove('hidden');
+  toggleMatchTypeFields(); // initialise correct fields for default selection
   document.querySelectorAll('#nm-ranked-fields input[type=checkbox]').forEach(cb=>{
     cb.addEventListener('change',()=>{
       const n=document.querySelectorAll('#nm-ranked-fields input[type=checkbox]:checked').length;
@@ -1899,7 +1943,9 @@ function openAddMatchModal(){
 function editMatch(id){
   const m=S.matches.find(x=>x.id===id);if(!m)return;
   document.getElementById('add-match-title').textContent='Edit Match';
-  const isMulti=(m.matchType==='ranked'||m.matchType==='survivors');
+  const fmt=getFormat(m);
+  const isMulti=isMultiPick(m);
+  const typeLabel=fmt?.name||(m.matchType==='ranked'?'Exact Ranking':m.matchType==='survivors'?'Top 3 Survivors':'Head-to-Head');
   const existingContestants=new Set((m.contestants||'').split(',').map(s=>s.trim()).filter(Boolean));
 
   // For standard: show all participants; for multi: show checkbox list
@@ -1955,22 +2001,31 @@ function editMatch(id){
 
 async function submitAddMatch(){
   const id=document.getElementById('nm-id').value.trim();
-  const p1=document.getElementById('nm-p1')?.value||'';
-  const p2=document.getElementById('nm-p2')?.value||'';
   const roundLabel=document.getElementById('nm-round').value.trim()||(S.eventSubtitle||'Round 1');
-  const matchType=document.getElementById('nm-type')?.value||'standard';
-  const isMulti=(matchType==='ranked'||matchType==='survivors');
-  if(!isMulti&&(!p1||!p2)){showErr('add-match-error','Select both players');return;}
+  const formatId=document.getElementById('nm-type')?.value||'head-to-head';
+  const allFormats=S.bettingFormats.length?S.bettingFormats:DEFAULT_FORMATS;
+  const fmt=allFormats.find(f=>f.id===formatId)||allFormats[0];
+  const isMulti=fmt.winCondition!=='single-winner';
+  const isOrder=fmt.winCondition==='exact-order';
+  // Derive legacy matchType for backward compatibility
+  const matchType=isOrder?'ranked':isMulti?'survivors':'standard';
+
   if(!id){showErr('add-match-error','Enter a match ID');return;}
   if(S.matches.find(m=>m.id===id)){showErr('add-match-error','Match ID already exists');return;}
-  let p1final=p1, p2final=p2, contestants=null;
+
+  let p1='',p2='',contestants=null;
   if(isMulti){
     const cs=Array.from(document.querySelectorAll('#nm-ranked-fields input[type=checkbox]:checked')).map(cb=>cb.value);
     if(cs.length<2){showErr('add-match-error','Select at least 2 contestants');return;}
     contestants=cs.join(',');
-    p1final=cs[0]; p2final=cs[1]||cs[0];
+    p1=cs[0]; p2=cs[1]||cs[0];
+  } else {
+    p1=document.getElementById('nm-p1')?.value||'';
+    p2=document.getElementById('nm-p2')?.value||'';
+    if(!p1||!p2){showErr('add-match-error','Select both players');return;}
   }
-  await _fsSet('matches',id,{id,round:roundLabel,roundLabel,p1:p1final,p2:p2final,contestants,status:'pending',winner:null,matchType,
+  await _fsSet('matches',id,{id,round:roundLabel,roundLabel,p1,p2,contestants,status:'pending',winner:null,
+    matchType, formatId,
     bettingOpen:document.getElementById('nm-betting').value==='true',
     day:document.getElementById('nm-day').value.trim(),
     time:document.getElementById('nm-time').value.trim()});
