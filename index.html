@@ -2352,20 +2352,44 @@ function loadCorrBets(mode){
   const pOpts=[...S.players].sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
   const rows=sorted.map(b=>{
     const m=S.matches.find(x=>x.id===b.matchId);
-    const p1=m?m.p1:'?',p2=m?m.p2:'?';
-    const pickOpts=`<option value="${p1}" ${b.pick===p1?'selected':''}>${p1}</option><option value="${p2}" ${b.pick===p2?'selected':''}>${p2}</option>`;
+    const p1=m?m.p1:'?', p2=m?m.p2:'?';
+    const isSurv=b.betType==='survivors'||b.betType==='exact-set';
+    const isRanked=b.betType==='ranked'||b.betType==='exact-order';
+    const isMulti=isSurv||isRanked;
+
+    // Pick display — for multi-pick show a read-only text field, not a dropdown
+    let pickDisplay='';
+    if(isSurv){
+      const names=Array.isArray(b.pickArray)&&b.pickArray.length
+        ?b.pickArray.join(', ')
+        :(b.pick||'').split(',').map(s=>s.trim()).filter(Boolean).join(', ');
+      pickDisplay=`<input type="text" id="cb-pick-${b.id}" value="${names}" style="font-size:12px;padding:4px 8px" readonly title="Edit not supported for multi-pick — void and re-bet instead" />`;
+    } else if(isRanked){
+      const parts=(b.pick||'').split('|').filter(Boolean).map(pt=>{const[pos,name]=pt.split(':');const me=['','🥇','🥈','🥉'];return (me[parseInt(pos)]||pos)+' '+(name||'?');});
+      pickDisplay=`<input type="text" id="cb-pick-${b.id}" value="${parts.join(' · ')}" style="font-size:12px;padding:4px 8px" readonly title="Edit not supported for ranked — void and re-bet instead" />`;
+    } else {
+      const pickOpts=`<option value="${p1}" ${b.pick===p1?'selected':''}>${p1}</option><option value="${p2}" ${b.pick===p2?'selected':''}>${p2}</option>`;
+      pickDisplay=`<select id="cb-pick-${b.id}" style="font-size:12px;padding:4px 8px">${pickOpts}</select>`;
+    }
+
     const resOpts=['won','lost','walkover','voided','null'].map(r=>`<option value="${r}" ${String(b.result)===r?'selected':''}>${r==='null'?'pending':r}</option>`).join('');
     const bettorOpts=pOpts.replace(`value="${b.playerName}"`,`value="${b.playerName}" selected`);
     const sc=b.result===null?'var(--gold)':b.result==='won'?'var(--green)':b.result==='voided'||b.result==='walkover'?'var(--text-dim)':'var(--red)';
+
+    // Format label for multi-pick matches
+    const fmt_=getFormat(m);
+    const formatTag=isMulti?`<span style="font-size:10px;color:var(--gold);background:rgba(201,168,76,.12);padding:1px 6px;border-radius:3px;margin-left:4px">${fmt_?.name||b.betType}</span>`:'';
+
     return `<div style="background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
         <span style="font-size:11px;color:var(--gold);font-family:'Cinzel',serif">${b.matchId}</span>
-        <span style="font-size:11px;color:var(--text-dim)">${p1} vs ${p2}</span>
+        <span style="font-size:11px;color:var(--text-dim)">${isMulti?(m?.contestants||p1+' vs '+p2):p1+' vs '+p2}</span>
+        ${formatTag}
         <span style="font-size:11px;color:${sc};background:rgba(0,0,0,.2);padding:1px 7px;border-radius:3px;margin-left:auto">${b.result===null?'pending':b.result}</span>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
         <div><label class="lbl" style="margin-bottom:3px">Bettor</label><select id="cb-bettor-${b.id}" style="font-size:12px;padding:4px 8px">${bettorOpts}</select></div>
-        <div><label class="lbl" style="margin-bottom:3px">Pick</label><select id="cb-pick-${b.id}" style="font-size:12px;padding:4px 8px">${pickOpts}</select></div>
+        <div><label class="lbl" style="margin-bottom:3px">Pick${isMulti?' <span style="color:var(--text-dim);font-weight:normal">(read-only)</span>':''}</label>${pickDisplay}</div>
         <div><label class="lbl" style="margin-bottom:3px">Amount</label><input type="number" id="cb-amt-${b.id}" value="${b.amount}" min="1" style="font-size:12px;padding:4px 8px" /></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
@@ -2373,6 +2397,7 @@ function loadCorrBets(mode){
         <div><label class="lbl" style="margin-bottom:3px">Reason <span style="color:var(--red)">*required</span></label>
           <input type="text" id="cb-note-${b.id}" placeholder="e.g. Admin correction" style="font-size:12px;padding:4px 8px" value="${b.adminNote||''}" /></div>
       </div>
+      ${isMulti?`<div class="alert alert-info" style="margin-bottom:8px;font-size:12px">Multi-pick bet — pick is read-only. To change the pick, void this bet and ask the player to re-bet.</div>`:''}
       <div class="btn-row">
         <button class="btn btn-sm btn-gold" onclick="saveBetEdit('${b.id}')">Save</button>
         <button class="btn btn-sm btn-danger" onclick="voidBet('${b.id}')">Void</button>
@@ -2408,7 +2433,10 @@ async function voidBet(betId){
   if(!bet){const msg=document.getElementById('cb-msg-'+betId);if(msg){msg.style.display='block';msg.style.color='var(--red)';msg.textContent='Bet not found.';}return;}
   if(bet.result==='voided'){const msg=document.getElementById('cb-msg-'+betId);if(msg){msg.style.display='block';msg.style.color='var(--red)';msg.textContent='Already voided.';}return;}
   const refund = bet.result===null; // only refund if still pending (stake is gone from balance)
-  if(!confirm(`Void this bet (${fmt(bet.amount)} CC on ${bet.pick})?${refund?' Stake will be refunded.':' No refund (already settled).'}`))return;
+  const pickLabel=(bet.betType==='survivors'||bet.betType==='exact-set')
+    ?(Array.isArray(bet.pickArray)&&bet.pickArray.length?bet.pickArray.join(', '):(bet.pick||''))
+    :bet.pick;
+  if(!confirm(`Void this bet (${fmt(bet.amount)} CC on ${pickLabel})?${refund?' Stake will be refunded.':' No refund (already settled).'}`))return;
   const batch=writeBatch(_db);
   batch.update(doc(_db,'bets',betId),{result:'voided',adminNote:note,adminEditedAt:new Date().toISOString()});
   if(refund){
