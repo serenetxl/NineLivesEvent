@@ -346,6 +346,7 @@ let S = {
   closedMessage: 'YOU WANT TO GAMBLE NOW?\nPlease wait — the casino is not open yet! 🐱',
   loanInterestRate: 20,
   sponsorInterestRate: 10,
+  startingBalance: 1000,
 };
 let isAdmin = false;
 let _unsubs = [], _curPTab = 'p-matches', _curATab = 'a-matches';
@@ -680,7 +681,7 @@ function regKey(k){
       const name=document.getElementById('reg-name').value.trim();
       // Add player to DB if not already there
       if(!S.players.find(p=>norm(p.name)===norm(name))){
-        await _fsSet('players','p'+Date.now(),{name,balance:0,loanPrincipal:0,interestOwed:0,debt:0,netWorth:0,status:'spectator'});
+        await _fsSet('players','p'+Date.now(),{name,balance:S.startingBalance||0,loanPrincipal:0,interestOwed:0,debt:0,netWorth:S.startingBalance||0,status:'spectator'});
       }
       const newPins={...S.pins,[norm(name)]:regBuf};
       await _fsCfg({pins:newPins});
@@ -2155,7 +2156,7 @@ async function submitAddPlayer(){
   const status=document.getElementById('new-player-status').value;
   if(!name){showErr('add-player-error','Enter a name');return;}
   if(S.players.find(p=>norm(p.name)===norm(name))){showErr('add-player-error','Player already exists');return;}
-  await _fsSet('players','p'+Date.now(),{name,balance:0,loanPrincipal:0,interestOwed:0,debt:0,netWorth:0,status});
+  await _fsSet('players','p'+Date.now(),{name,balance:S.startingBalance||0,loanPrincipal:0,interestOwed:0,debt:0,netWorth:S.startingBalance||0,status});
   closeModal('add-player-modal');document.getElementById('new-player-name').value='';
 }
 
@@ -2647,6 +2648,12 @@ function renderASettings(){
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="fg"><label class="lbl">Admin password</label>
           <input type="text" id="evt-adminpw" value="${S.adminPw||ADMIN_PW_DEFAULT}" placeholder="password" /></div>
+        <div class="fg"><label class="lbl">New player starting CC</label>
+          <input type="number" id="evt-starting-bal" value="${S.startingBalance||0}" min="0" />
+          <div style="font-size:11px;color:var(--text-dim);margin-top:3px">Auto-applied when anyone registers or is added</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="fg"><label class="lbl">Head-to-Head min payout (×)</label>
           <input type="number" id="evt-betmult" value="${S.betMult||2}" min="1" max="10" /></div>
       </div>
@@ -2791,13 +2798,14 @@ async function saveEventSetup(){
   const icon=(document.getElementById('evt-icon')?.value||'🐱').trim();
   const pw=(document.getElementById('evt-adminpw')?.value||'').trim();
   const mult=parseInt(document.getElementById('evt-betmult')?.value)||2;
+  const startingBal=parseInt(document.getElementById('evt-starting-bal')?.value)||0;
   const interestRate=parseFloat(document.getElementById('evt-interest')?.value)??20;
   const sponsorRate=parseFloat(document.getElementById('evt-sponsor-interest')?.value)??10;
   if(!title){alert('Event name cannot be blank.');return;}
   if(!pw){alert('Admin password cannot be blank.');return;}
   const statusEl=document.getElementById('evt-setup-status');
   if(statusEl){statusEl.style.color='var(--gold)';statusEl.textContent='Saving...';}
-  await _fsCfg({eventTitle:title,eventSubtitle:subtitle,eventIcon:icon,adminPw:pw,betMult:mult,loanInterestRate:interestRate,sponsorInterestRate:sponsorRate});
+  await _fsCfg({eventTitle:title,eventSubtitle:subtitle,eventIcon:icon,adminPw:pw,betMult:mult,startingBalance:startingBal,loanInterestRate:interestRate,sponsorInterestRate:sponsorRate});
   if(statusEl){statusEl.style.color='var(--green)';statusEl.textContent='✅ Event settings saved!';}
   setTimeout(()=>{if(statusEl)statusEl.textContent='';},3000);
 }
@@ -2983,6 +2991,7 @@ function subscribeAll(){
       if(d.betMult)       S.betMult       = d.betMult;
       if(d.loanInterestRate!=null)    S.loanInterestRate    = d.loanInterestRate;
       if(d.sponsorInterestRate!=null) S.sponsorInterestRate = d.sponsorInterestRate;
+      if(d.startingBalance!=null)     S.startingBalance     = d.startingBalance;
       if(d.bettingFormats && d.bettingFormats.length) S.bettingFormats = d.bettingFormats;
       S.siteOpen = d.siteOpen !== false; // default true if not set
       if(d.closedMessage) S.closedMessage = d.closedMessage;
