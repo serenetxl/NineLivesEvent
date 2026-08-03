@@ -395,9 +395,9 @@ function getPlayer(name){
 function getSpendable(name){
   const p = getPlayer(name);
   if(!p) return 0;
-  // Subtract any CC already locked in pending bets from the current balance
-  const pending = getPendingStakes(name);
-  return Math.max(0, (p.balance||0) - pending);
+  // Balance is already deducted when bets are placed (stakeInBalance:false pattern)
+  // so we just return the actual balance — no need to subtract pending stakes again
+  return p.balance||0;
 }
 
 // Coins locked in unresolved pending bets — informational only
@@ -1165,10 +1165,8 @@ async function submitSurvivorsBet(matchId){
     if(!p?.id){showErr('bet-error','Player not found');if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;}
     const liveSnap=await getDoc(doc(_db,'players',p.id));
     const liveBal=liveSnap.exists()?liveSnap.data().balance||0:p.balance||0;
-    const livePending=getPendingStakes(S.currentUser);
-    const liveSpendable=Math.max(0,liveBal-livePending);
-    if(amount>liveSpendable){
-      showErr('bet-error',`Not enough balance — you have ${fmt(liveSpendable)} CC spendable`);
+    if(amount>liveBal){
+      showErr('bet-error',`Not enough balance — you have ${fmt(liveBal)} CC`);
       if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;
     }
     const pickArray=[...checked].sort();
@@ -1205,10 +1203,8 @@ async function submitRankedBet(matchId){
     if(!p?.id){showErr('bet-error','Player not found');if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;}
     const liveSnap=await getDoc(doc(_db,'players',p.id));
     const liveBal=liveSnap.exists()?liveSnap.data().balance||0:p.balance||0;
-    const livePending=getPendingStakes(S.currentUser);
-    const liveSpendable=Math.max(0,liveBal-livePending);
-    if(amount>liveSpendable){
-      showErr('bet-error',`Not enough balance — you have ${fmt(liveSpendable)} CC spendable`);
+    if(amount>liveBal){
+      showErr('bet-error',`Not enough balance — you have ${fmt(liveBal)} CC`);
       if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;
     }
     const pick=`1:${r1}|2:${r2}|3:${r3}`;
@@ -3093,10 +3089,8 @@ async function submitBetWithDeduct(matchId){
     // Live read from Firestore to prevent race condition if multiple bets placed quickly
     const liveSnap=await getDoc(doc(_db,'players',p.id));
     const liveBal=liveSnap.exists()?liveSnap.data().balance||0:p.balance||0;
-    const livePending=getPendingStakes(S.currentUser);
-    const liveSpendable=Math.max(0,liveBal-livePending);
-    if(amount>liveSpendable){
-      showErr('bet-error',`Not enough balance — you have ${fmt(liveSpendable)} CC spendable`);
+    if(amount>liveBal){
+      showErr('bet-error',`Not enough balance — you have ${fmt(liveBal)} CC`);
       if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;
     }
     const batch=writeBatch(_db);
