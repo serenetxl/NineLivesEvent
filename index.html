@@ -395,7 +395,9 @@ function getPlayer(name){
 function getSpendable(name){
   const p = getPlayer(name);
   if(!p) return 0;
-  return p.balance||0;
+  // Subtract any CC already locked in pending bets from the current balance
+  const pending = getPendingStakes(name);
+  return Math.max(0, (p.balance||0) - pending);
 }
 
 // Coins locked in unresolved pending bets — informational only
@@ -1147,58 +1149,82 @@ function _refreshRankOpts(){
 }
 
 async function submitSurvivorsBet(matchId){
+  if(!S.siteOpen){showErr('bet-error','The site is currently closed.');return;}
   const m=S.matches.find(x=>x.id===matchId);
+  if(!m?.bettingOpen){showErr('bet-error','Betting is closed for this match.');return;}
   const fmt_=getFormat(m);
   const selections=fmt_?.selections||3;
   const checked=Array.from(document.querySelectorAll('[id^="surv-pick-"]:checked')).map(c=>c.value);
   const amount=parseInt(document.getElementById('bet-amount')?.value)||0;
   if(checked.length!==selections){showErr('bet-error',`Select exactly ${selections} names`);return;}
-  const p=getPlayer(S.currentUser);
-  const bal=(p?.balance)||0;
   if(!amount||amount<=0){showErr('bet-error','Enter a valid amount');return;}
-  if(amount>bal){showErr('bet-error',`Not enough balance (have ${fmt(bal)} CC)`);return;}
-  const pickArray=[...checked].sort();
-  const pick=pickArray.join(',');
   const btn=document.querySelector('#bet-modal .btn-gold:last-child');
   if(btn){btn.disabled=true;btn.textContent='Placing...';}
-  const batch=writeBatch(_db);
-  const betId='b'+Date.now();
-  const formatId=m?.formatId||'top3-survivors';
-  batch.set(doc(_db,'bets',betId),{matchId,playerName:S.currentUser,pick,pickArray,amount,result:null,betType:'survivors',formatId,stakeInBalance:false});
-  if(p?.id){
-    const newBal=Math.round(bal-amount);
+  try{
+    const p=getPlayer(S.currentUser);
+    if(!p?.id){showErr('bet-error','Player not found');if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;}
+    const liveSnap=await getDoc(doc(_db,'players',p.id));
+    const liveBal=liveSnap.exists()?liveSnap.data().balance||0:p.balance||0;
+    const livePending=getPendingStakes(S.currentUser);
+    const liveSpendable=Math.max(0,liveBal-livePending);
+    if(amount>liveSpendable){
+      showErr('bet-error',`Not enough balance — you have ${fmt(liveSpendable)} CC spendable`);
+      if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;
+    }
+    const pickArray=[...checked].sort();
+    const pick=pickArray.join(',');
+    const batch=writeBatch(_db);
+    const betId='b'+Date.now();
+    const formatId=m?.formatId||'top3-survivors';
+    batch.set(doc(_db,'bets',betId),{matchId,playerName:S.currentUser,pick,pickArray,amount,result:null,betType:'survivors',formatId,stakeInBalance:false});
+    const newBal=Math.round(liveBal-amount);
     batch.set(doc(_db,'players',p.id),{balance:newBal,netWorth:newBal-(p.debt||0)},{merge:true});
+    await batch.commit();
+    _postDiscord('🎲 **'+S.currentUser+'** bet **'+fmt(amount)+' CC** — '+(fmt_?.name||'Pick')+': '+pickArray.join(', ')+' ('+matchId+')');
+    closeModal('bet-modal');
+  }catch(e){
+    showErr('bet-error','Error placing bet: '+e.message);
+    if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}
   }
-  await batch.commit();
-  _postDiscord('🎲 **'+S.currentUser+'** bet **'+fmt(amount)+' CC** — '+(fmt_?.name||'Pick')+': '+pickArray.join(', ')+' ('+matchId+')');
-  closeModal('bet-modal');
 }
 
 async function submitRankedBet(matchId){
+  if(!S.siteOpen){showErr('bet-error','The site is currently closed.');return;}
+  const m_=S.matches.find(x=>x.id===matchId);
+  if(!m_?.bettingOpen){showErr('bet-error','Betting is closed for this match.');return;}
   const r1=document.getElementById('rank-1')?.value;
   const r2=document.getElementById('rank-2')?.value;
   const r3=document.getElementById('rank-3')?.value;
   const amount=parseInt(document.getElementById('bet-amount')?.value)||0;
   if(new Set([r1,r2,r3]).size!==3){showErr('bet-error','Each position must be a different player');return;}
-  const p=getPlayer(S.currentUser);
-  const bal=(p?.balance)||0;
   if(!amount||amount<=0){showErr('bet-error','Enter a valid amount');return;}
-  if(amount>bal){showErr('bet-error',`Not enough balance (have ${fmt(bal)} CC)`);return;}
-  const pick=`1:${r1}|2:${r2}|3:${r3}`;
-  const batch=writeBatch(_db);
-  const betId='b'+Date.now();
-  batch.set(doc(_db,'bets',betId),{matchId,playerName:S.currentUser,pick,amount,result:null,betType:'ranked',stakeInBalance:false});
-  if(p?.id){
-    const rBetBal=Math.round(bal-amount);
-    batch.set(doc(_db,'players',p.id),{balance:rBetBal,netWorth:rBetBal-(p.debt||0)},{merge:true});
-  }
-  await batch.commit();
-  const _rm=S.matches.find(x=>x.id===matchId);
-  if(_rm){
+  const btn=document.querySelector('#bet-modal .btn-gold:last-child');
+  if(btn){btn.disabled=true;btn.textContent='Placing...';}
+  try{
+    const p=getPlayer(S.currentUser);
+    if(!p?.id){showErr('bet-error','Player not found');if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;}
+    const liveSnap=await getDoc(doc(_db,'players',p.id));
+    const liveBal=liveSnap.exists()?liveSnap.data().balance||0:p.balance||0;
+    const livePending=getPendingStakes(S.currentUser);
+    const liveSpendable=Math.max(0,liveBal-livePending);
+    if(amount>liveSpendable){
+      showErr('bet-error',`Not enough balance — you have ${fmt(liveSpendable)} CC spendable`);
+      if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;
+    }
+    const pick=`1:${r1}|2:${r2}|3:${r3}`;
+    const batch=writeBatch(_db);
+    const betId='b'+Date.now();
+    batch.set(doc(_db,'bets',betId),{matchId,playerName:S.currentUser,pick,amount,result:null,betType:'ranked',stakeInBalance:false});
+    const newBal=Math.round(liveBal-amount);
+    batch.set(doc(_db,'players',p.id),{balance:newBal,netWorth:newBal-(p.debt||0)},{merge:true});
+    await batch.commit();
     const rankPicks=pick.split('|').map(part=>{const[pos,name]=part.split(':');const medals=['','🥇','🥈','🥉'];return (medals[parseInt(pos)]||pos+':')+' '+name;}).join(' · ');
-    _postDiscord('🏆 **'+S.currentUser+'** bet **'+fmt(amount)+' CC** on ranking: '+rankPicks+' ('+_rm.id+')');
+    _postDiscord('🏆 **'+S.currentUser+'** bet **'+fmt(amount)+' CC** on ranking: '+rankPicks+' ('+matchId+')');
+    closeModal('bet-modal');
+  }catch(e){
+    showErr('bet-error','Error placing bet: '+e.message);
+    if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}
   }
-  closeModal('bet-modal');
 }
 
 // ── BET MODAL ─────────────────────────────────
@@ -3048,13 +3074,12 @@ async function _postDiscord(msg){
 
 // ── BET PLACEMENT ──
 async function submitBetWithDeduct(matchId){
+  if(!S.siteOpen){showErr('bet-error','The site is currently closed.');return;}
+  const m=S.matches.find(x=>x.id===matchId);
+  if(!m?.bettingOpen){showErr('bet-error','Betting is closed for this match.');return;}
   const pick=document.getElementById('bet-pick').value;
   const amount=parseInt(document.getElementById('bet-amount').value);
-  const p_val=getPlayer(S.currentUser);
-  const curBal=(p_val?.balance)||0;
   if(!amount||amount<=0){showErr('bet-error','Enter a valid amount');return;}
-  if(amount>curBal){showErr('bet-error',`Not enough balance (have ${fmt(curBal)} CC)`);return;}
-  const m=S.matches.find(x=>x.id===matchId);
   if(m){
     const user=norm(S.currentUser);
     if(user===norm(m.p1)&&norm(pick)===norm(m.p2)){showErr('bet-error','You cannot bet on your opponent');return;}
@@ -3062,26 +3087,33 @@ async function submitBetWithDeduct(matchId){
   }
   const btn=document.querySelector('#bet-modal .btn-gold:last-child');
   if(btn){btn.disabled=true;btn.textContent='Placing...';}
-
-  // Write bet + deduct from available in one batch
-  // Use setDoc merge=false is wrong; use batch.update but bypass _dbReady with direct writeBatch
-  const p=getPlayer(S.currentUser);
-  const batch=writeBatch(_db);
-  const betId='b'+Date.now();
-  batch.set(doc(_db,'bets',betId),{matchId,playerName:S.currentUser,pick,amount,result:null,stakeInBalance:false});
-  if(p&&p.id){
-    const newBal=Math.round((p.balance||0)-amount);
-    const newNW=newBal-(p.debt||0);
-    // Use set with merge:true so this works even if _dbReady hasn't fired yet
-    batch.set(doc(_db,'players',p.id),{balance:newBal,netWorth:newNW},{merge:true});
+  try{
+    const p=getPlayer(S.currentUser);
+    if(!p?.id){showErr('bet-error','Player not found');if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;}
+    // Live read from Firestore to prevent race condition if multiple bets placed quickly
+    const liveSnap=await getDoc(doc(_db,'players',p.id));
+    const liveBal=liveSnap.exists()?liveSnap.data().balance||0:p.balance||0;
+    const livePending=getPendingStakes(S.currentUser);
+    const liveSpendable=Math.max(0,liveBal-livePending);
+    if(amount>liveSpendable){
+      showErr('bet-error',`Not enough balance — you have ${fmt(liveSpendable)} CC spendable`);
+      if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;
+    }
+    const batch=writeBatch(_db);
+    const betId='b'+Date.now();
+    batch.set(doc(_db,'bets',betId),{matchId,playerName:S.currentUser,pick,amount,result:null,stakeInBalance:false});
+    const newBal=Math.round(liveBal-amount);
+    batch.set(doc(_db,'players',p.id),{balance:newBal,netWorth:newBal-(p.debt||0)},{merge:true});
+    await batch.commit();
+    if(m){
+      const emoji=norm(pick)===norm(m.p1)?'🟡':'🔵';
+      _postDiscord(emoji+' **'+S.currentUser+'** bet **'+fmt(amount)+' CC** on **'+pick+'** ('+m.id+': '+m.p1+' vs '+m.p2+')');
+    }
+    closeModal('bet-modal');
+  }catch(e){
+    showErr('bet-error','Error placing bet: '+e.message);
+    if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}
   }
-  await batch.commit();
-  // Discord announcement for standard bet
-  if(m){
-    const emoji=norm(pick)===norm(m.p1)?'🟡':'🔵';
-    _postDiscord(emoji+' **'+S.currentUser+'** bet **'+fmt(amount)+' CC** on **'+pick+'** ('+m.id+': '+m.p1+' vs '+m.p2+')');
-  }
-  closeModal('bet-modal');
 }
 Object.assign(globalThis,{
   startLogin, showLogin, showAdminLogin, showRegister, loginAdmin, logout,
