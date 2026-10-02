@@ -1,2 +1,2 @@
-# NineLivesMelodyEvent
-Nine Lives guild's "mini" melody event. Betting cat coins system. 
+# NineLivesEvent
+Nine Lives guild's betting cat coins system. 
