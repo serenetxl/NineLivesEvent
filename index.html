@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- NINELIVES v20260620-setup -->
+<!-- NINELIVES v20261003-1 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -310,6 +310,8 @@ const _app = initializeApp({
 });
 const _db = getFirestore(_app);
 
+// Bump this on every upload — open tabs on an older version reload themselves.
+const APP_VERSION='20261003-1';
 const ADMIN_PW_DEFAULT = "catwins2024";
 let ADMIN_PW = ADMIN_PW_DEFAULT;
 // BET_MULT removed — use S.betMult (parimutuel floor, set per-event in Admin → Settings)
@@ -606,7 +608,64 @@ function showLogin(){
 }
 function showAdminLogin(){showScreen('admin-login-screen');}
 function showRegister(){buildKeypad('reg-keypad',regKey);showScreen('register-screen');}
-function logout(){S.currentUser=null;isAdmin=false;_unsubs.forEach(u=>u());_unsubs=[];showLogin();}
+function logout(){S.currentUser=null;isAdmin=false;_clearSession();showLogin();}
+
+// ── SESSION (stay signed in after refresh) ──
+const _SESSION_KEY='ninelives-session';
+let _booted=false,_cfgLoaded=false,_playersLoaded=false;
+function _saveSession(secret){try{localStorage.setItem(_SESSION_KEY,JSON.stringify({user:S.currentUser,admin:isAdmin,secret}));}catch(e){}}
+function _clearSession(){try{localStorage.removeItem(_SESSION_KEY);}catch(e){}}
+function _restoreSession(){
+  let s=null;try{s=JSON.parse(localStorage.getItem(_SESSION_KEY)||'null');}catch(e){}
+  if(!s||!s.user) return false;
+  if(s.admin){
+    if(s.secret!==(S.adminPw||ADMIN_PW_DEFAULT)){_clearSession();return false;}
+    S.currentUser='Admin';isAdmin=true;showScreen('admin-screen');refreshCurrentView();return true;
+  }
+  if(!S.siteOpen) return false;
+  if(!getPlayer(s.user)) return false;
+  if(S.pins[norm(s.user)]!==s.secret){_clearSession();return false;}
+  S.currentUser=s.user;isAdmin=false;
+  document.getElementById('player-name-hdr').textContent=s.user;
+  showScreen('player-screen');refreshCurrentView();return true;
+}
+// Keeps the logged-out screens (login / closed) in step with live data.
+// Returns true when nobody is logged in, so the caller skips tab rendering.
+function _syncScreens(){
+  const vis=id=>!document.getElementById(id).classList.contains('hidden');
+  if(S.currentUser){
+    if(!isAdmin&&S.siteOpen&&vis('closed-screen')) showScreen('player-screen');
+    return false;
+  }
+  if(!_booted) return true;
+  if(vis('closed-screen')&&S.siteOpen){ if(!_restoreSession()) showLogin(); }
+  else if(vis('login-screen')){
+    if(!S.siteOpen) showLogin();
+    else{const sel=document.getElementById('login-name-select');const v=sel.value;populateDropdown();sel.value=v;}
+  }
+  return true;
+}
+
+// ── VERSION CHECK (auto-reload old tabs) ──
+function _checkVersion(req){
+  if(!req||!(req>APP_VERSION)) return;
+  // don't interrupt someone halfway through a bet / form
+  if(document.querySelector('.modal-overlay:not(.hidden)')){setTimeout(()=>_checkVersion(req),5000);return;}
+  let tried=null;
+  try{tried=sessionStorage.getItem('ninelives-reload');}catch(e){return;}
+  if(tried===req){console.warn('[NINELIVES] Still on '+APP_VERSION+' after reloading for '+req+' — hard refresh needed.');return;}
+  try{sessionStorage.setItem('ninelives-reload',req);}catch(e){return;}
+  location.replace(location.pathname+'?v='+encodeURIComponent(req));
+}
+async function _pollVersion(){
+  try{
+    const r=await fetch(location.pathname+'?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok) return;
+    const m=(await r.text()).match(/APP_VERSION\s*=\s*'(\d[^']*)'/);
+    if(m) _checkVersion(m[1]);
+  }catch(e){}
+}
+function _newBetId(){return 'b'+(Date.now())+Math.random().toString(36).slice(2,7);}
 
 function populateDropdown(){
   const sel=document.getElementById('login-name-select');
@@ -636,7 +695,7 @@ function startLogin(){
 function loginAdmin(){
   const pw = S.adminPw || ADMIN_PW_DEFAULT;
   if(document.getElementById('admin-pw').value !== pw){showErr('admin-pw-error','Incorrect password');return;}
-  S.currentUser='Admin';isAdmin=true;showScreen('admin-screen');renderAMatches();
+  S.currentUser='Admin';isAdmin=true;_saveSession(pw);showScreen('admin-screen');refreshCurrentView();
 }
 
 let pinBuf='',regBuf='',regConf='',regStage='set';
@@ -658,7 +717,7 @@ function pinKey(k){
   updateDots('pd',pinBuf);
   if(pinBuf.length===4) setTimeout(()=>{
     if(S.pins[norm(pendingName)]===pinBuf){
-      S.currentUser=pendingName;isAdmin=false;
+      S.currentUser=pendingName;isAdmin=false;_saveSession(pinBuf);
       showScreen('player-screen');
       document.getElementById('player-name-hdr').textContent=pendingName;
       refreshStats();renderPMatches();
@@ -687,7 +746,7 @@ function regKey(k){
       }
       const newPins={...S.pins,[norm(name)]:regBuf};
       await _fsCfg({pins:newPins});
-      S.currentUser=name;isAdmin=false;
+      S.currentUser=name;isAdmin=false;_saveSession(regBuf);
       document.getElementById('player-name-hdr').textContent=name;
       showScreen('player-screen');
       _curPTab='p-matches';
@@ -1172,7 +1231,7 @@ async function submitSurvivorsBet(matchId){
     const pickArray=[...checked].sort();
     const pick=pickArray.join(',');
     const batch=writeBatch(_db);
-    const betId='b'+Date.now();
+    const betId=_newBetId();
     const formatId=m?.formatId||'top3-survivors';
     batch.set(doc(_db,'bets',betId),{matchId,playerName:S.currentUser,pick,pickArray,amount,result:null,betType:'survivors',formatId,stakeInBalance:false});
     const newBal=Math.round(liveBal-amount);
@@ -1209,7 +1268,7 @@ async function submitRankedBet(matchId){
     }
     const pick=`1:${r1}|2:${r2}|3:${r3}`;
     const batch=writeBatch(_db);
-    const betId='b'+Date.now();
+    const betId=_newBetId();
     batch.set(doc(_db,'bets',betId),{matchId,playerName:S.currentUser,pick,amount,result:null,betType:'ranked',stakeInBalance:false});
     const newBal=Math.round(liveBal-amount);
     batch.set(doc(_db,'players',p.id),{balance:newBal,netWorth:newBal-(p.debt||0)},{merge:true});
@@ -1329,7 +1388,7 @@ async function submitBet(matchId){
   }
   const btn=document.querySelector('#bet-modal .btn-gold:last-child');
   if(btn){btn.disabled=true;btn.textContent='Placing...';}
-  await _fsSet('bets','b'+Date.now(),{matchId,playerName:S.currentUser,pick,amount,result:null});
+  await _fsSet('bets',_newBetId(),{matchId,playerName:S.currentUser,pick,amount,result:null});
   closeModal('bet-modal');
 }
 
@@ -1423,7 +1482,8 @@ async function takeLoan(){
 
 
 // ── LIVE BETS VIEW ────────────────────────────
-function _toggleBets(colId,total){var d=document.getElementById(colId);var b=document.getElementById('btn-'+colId);if(!d||!b)return;var open=d.style.display!=='none';d.style.display=open?'none':'';b.innerHTML=open?'▼ '+total+' bet'+(total!==1?'s':''):'▲ Hide bets';}
+const _openBetLists=new Set();
+function _toggleBets(colId,total){var d=document.getElementById(colId);var b=document.getElementById('btn-'+colId);if(!d||!b)return;var open=d.style.display!=='none';if(open)_openBetLists.delete(colId);else _openBetLists.add(colId);d.style.display=open?'none':'';b.innerHTML=open?'▼ '+total+' bet'+(total!==1?'s':''):'▲ Hide bets';}
 
 function renderLiveBets(containerId){
   const el=document.getElementById(containerId);
@@ -1581,7 +1641,7 @@ function renderLiveBets(containerId){
           </div>
         </div>`;
       }).join('');
-      betRows=`<div id="${colId}" style="display:none">
+      betRows=`<div id="${colId}" style="${_openBetLists.has(colId)?'':'display:none'}">
         <div class="livebets-bet-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:6px">${rows}</div>
       </div>`;
     }
@@ -1611,7 +1671,7 @@ function renderLiveBets(containerId){
       </div>
       ${potHtml}
       ${bets.length>0
-        ?`<button id="btn-${colId}" onclick="_toggleBets('${colId}',${bets.length})" style="width:100%;margin-top:4px;padding:4px 8px;font-size:11px;color:var(--text-dim);background:var(--bg3);border:0.5px solid var(--border);border-radius:4px;cursor:pointer;font-family:inherit;text-align:left">▼ ${bets.length} bet${bets.length!==1?'s':''}</button>`
+        ?`<button id="btn-${colId}" onclick="_toggleBets('${colId}',${bets.length})" style="width:100%;margin-top:4px;padding:4px 8px;font-size:11px;color:var(--text-dim);background:var(--bg3);border:0.5px solid var(--border);border-radius:4px;cursor:pointer;font-family:inherit;text-align:left">${_openBetLists.has(colId)?'▲ Hide bets':'▼ '+bets.length+' bet'+(bets.length!==1?'s':'')}</button>`
         :'<div style="font-size:11px;color:var(--text-dim);margin-top:4px">No bets yet</div>'}
       ${betRows}
     </div>`;
@@ -1741,6 +1801,7 @@ async function declareRankedResult(id){
   const selections=fmt_?.selections||3;
   const batch=writeBatch(_db);
   let resultStr='';
+  const _run={}; // running balance per player, so two winning bets both get paid
 
   if(isSet_){
     const picked=Array.from(document.querySelectorAll('[id^="surv-res-"]:checked')).map(c=>c.value);
@@ -1762,7 +1823,7 @@ async function declareRankedResult(id){
         const p=getPlayer(b.playerName);
         if(p?.id){
           const payout=Math.round(b.amount*payoutMult);
-          const newBal=Math.round((p.balance||0)+payout);
+          const newBal=Math.round((_run[p.id]??(p.balance||0))+payout);_run[p.id]=newBal;
           batch.update(doc(_db,'players',p.id),{balance:newBal,netWorth:newBal-(p.debt||0)});
         }
       }
@@ -1788,7 +1849,7 @@ async function declareRankedResult(id){
       if(mult>0){
         const p=getPlayer(b.playerName);
         if(p?.id){
-          const rBal=Math.round((p.balance||0)+b.amount*mult);
+          const rBal=Math.round((_run[p.id]??(p.balance||0))+b.amount*mult);_run[p.id]=rBal;
           batch.update(doc(_db,'players',p.id),{balance:rBal,netWorth:rBal-(p.debt||0)});
         }
       }
@@ -1875,7 +1936,7 @@ async function reopenMatch(id){
       // Reverse exactly what was paid out:
       // ranked: amount*10, standard: amount * settledOdds (stored at settlement)
       const paidOut = b.betType==='ranked'
-        ? b.amount*10
+        ? Math.round(b.amount*(b.settledOdds||10))
         : Math.round(b.amount*(b.settledOdds||S.betMult||2));
       reversals[n].delta -= paidOut;
       batch.update(doc(_db,'bets',b.id),{result:null,settledWinner:null,rankedResult:null,settledOdds:null});
@@ -2321,7 +2382,14 @@ async function removeDebtCapRound(idx){
 }
 
 // ── ADMIN: CORRECTIONS ────────────────────────
+let _corrLoaded=false,_corrDirty=false;
+// Live refresh for Corrections: keep the chosen match/player, and never wipe half-typed edits.
+function _refreshCorrections(){
+  if(!document.getElementById('corr-match-sel')){renderACorrections();return;}
+  if(_corrLoaded&&!_corrDirty) loadCorrBets(_corrView);
+}
 function renderACorrections(){
+  _corrView='match';_corrLoaded=false;_corrDirty=false;
   const matchOpts=S.matches.map(m=>`<option value="${m.id}">${m.id}: ${m.p1} vs ${m.p2} (${m.status})</option>`).join('');
   const playerOpts=[...S.players].sort((a,b)=>a.name.localeCompare(b.name))
     .map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
@@ -2345,14 +2413,15 @@ function renderACorrections(){
       <div class="fg"><label class="lbl">Select player</label>
         <select id="corr-player-sel" onchange="loadCorrBets('player')">${playerOpts}</select></div>
     </div>
-    <div id="corr-bets-table">
+    <div id="corr-bets-table" oninput="_corrMarkDirty()" onchange="_corrMarkDirty()">
       <div style="color:var(--text-dim);font-size:13px;padding:8px 0">Select a match or player above.</div>
     </div>`;
 }
 
 let _corrView='match';
+function _corrMarkDirty(){_corrDirty=true;}
 function setCorrView(view){
-  _corrView=view;
+  _corrView=view;_corrLoaded=false;_corrDirty=false;
   document.getElementById('corr-selector-match').style.display=view==='match'?'':'none';
   document.getElementById('corr-selector-player').style.display=view==='player'?'':'none';
   document.getElementById('corr-match-btn').className='btn btn-sm'+(view==='match'?' btn-gold':'');
@@ -2361,6 +2430,7 @@ function setCorrView(view){
 }
 
 function loadCorrBets(mode){
+  _corrLoaded=true;_corrDirty=false;
   mode=mode||_corrView;
   let bets,title;
   if(mode==='match'){
@@ -2957,8 +3027,8 @@ function exportData(){
 }
 async function forceReloadAllTabs(){
   if(!confirm('Force all open sessions to reload the latest version?\n\nAnyone on the site will be refreshed within 3 seconds. This kills stale cached sessions that may cause balance resets.'))return;
-  await _fsCfg({requiredVersion:'20260620-setup'});
-  alert('Done — all stale sessions will reload within 3 seconds.');
+  await _fsCfg({minVersion:APP_VERSION});
+  alert('Done — every tab on an older version than '+APP_VERSION+' will reload itself.');
 }
 
 async function clearAllBets(){
@@ -2986,6 +3056,7 @@ function subscribeAll(){
     S.players=snap.docs.map(d=>({id:d.id,...d.data()}));
     S.players.sort((a,b)=>a.name.localeCompare(b.name));
     if(snap.docs.length>0) _dbReady=true;
+    _playersLoaded=true;
     refreshCurrentView();
   }));
   _unsubs.push(onSnapshot(_col.matches(),snap=>{
@@ -3019,6 +3090,8 @@ function subscribeAll(){
       if(d.startingBalance!=null)     S.startingBalance     = d.startingBalance;
       if(d.bettingFormats && d.bettingFormats.length) S.bettingFormats = d.bettingFormats;
       S.siteOpen = d.siteOpen !== false; // default true if not set
+      _cfgLoaded=true;
+      _checkVersion(d.minVersion);
       if(d.closedMessage) S.closedMessage = d.closedMessage;
       // If site just got closed and user is on a player screen, kick them to closed
       if(!S.siteOpen && S.currentUser && !isAdmin){
@@ -3034,13 +3107,20 @@ function subscribeAll(){
   _setSyncDot('live');
 }
 
+let _deferT=null;
 function refreshCurrentView(){
-  if(!S.currentUser) return;
+  if(_syncScreens()) return;
+  // Don't wipe a box someone is typing in — retry shortly instead.
+  const _ae=document.activeElement,_tab=document.getElementById(isAdmin?_curATab:_curPTab);
+  if(_ae&&_tab&&_tab.contains(_ae)&&/^(INPUT|TEXTAREA)$/.test(_ae.tagName)){
+    if(!isAdmin) refreshStats();
+    clearTimeout(_deferT);_deferT=setTimeout(refreshCurrentView,1500);return;
+  }
   if(isAdmin){
     if(_curATab==='a-matches')     renderAMatches();
     else if(_curATab==='a-players') renderAPlayers();
     else if(_curATab==='a-bank')    renderABank();
-    else if(_curATab==='a-corrections') renderACorrections();
+    else if(_curATab==='a-corrections') _refreshCorrections();
     else if(_curATab==='a-livebets') renderLiveBets('a-livebets');
   } else {
     refreshStats();
@@ -3094,7 +3174,7 @@ async function submitBetWithDeduct(matchId){
       if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;
     }
     const batch=writeBatch(_db);
-    const betId='b'+Date.now();
+    const betId=_newBetId();
     batch.set(doc(_db,'bets',betId),{matchId,playerName:S.currentUser,pick,amount,result:null,stakeInBalance:false});
     const newBal=Math.round(liveBal-amount);
     batch.set(doc(_db,'players',p.id),{balance:newBal,netWorth:newBal-(p.debt||0)},{merge:true});
@@ -3123,7 +3203,7 @@ Object.assign(globalThis,{
   reopenMatch, takeLoan,
   applyGovAid: ()=>{}, undoGovAid: ()=>{}, // removed — no longer used
   renderLiveBets, _toggleBets, _toggleCat, _tcP, _tcA, _tcLB,
-  renderACorrections, setCorrView, loadCorrBets, saveBetEdit, voidBet, hardDeleteBet,
+  renderACorrections, setCorrView, _corrMarkDirty, loadCorrBets, saveBetEdit, voidBet, hardDeleteBet,
   saveDiscordWebhook, testDiscordWebhook,
   saveEventSetup, nukeForNewEvent,
   toggleSiteOpen, saveSiteMessage,
@@ -3139,32 +3219,14 @@ async function boot(){
     document.getElementById('loading-msg').textContent='Loading event data...';
     await initDefault();
     subscribeAll();
-    // Check for stale tab — if Firestore config has a newer requiredVersion, force reload
-    setTimeout(async()=>{
-      try{
-        const cfgSnap=await getDoc(_cfgDoc());
-        if(cfgSnap.exists()){
-          const req=cfgSnap.data().requiredVersion||'';
-          if(req && req>'20260620-setup'){
-            console.warn('[NINELIVES] Stale tab — reloading to required version '+req);
-            window.location.reload(true);
-          }
-        }
-      }catch(e){}
-    },3000);
-    await new Promise(r=>setTimeout(r,900));
-    populateDropdown();
+    // wait for real data (max 6s) instead of a fixed guess
+    for(let i=0;i<60&&!(_cfgLoaded&&_playersLoaded);i++) await new Promise(r=>setTimeout(r,100));
     buildKeypad('pin-keypad',pinKey);
     buildKeypad('reg-keypad',regKey);
-    document.getElementById('loading-screen').style.display='none';
-    // Show closed screen for players if site is locked
-    if(!S.siteOpen){
-      const msg=document.getElementById('closed-message');
-      if(msg) msg.innerHTML=(S.closedMessage||'').replace(/\n/g,'<br>');
-      showScreen('closed-screen');
-    } else {
-      showScreen('login-screen');
-    }
+    _booted=true;
+    if(!_restoreSession()) showLogin();
+    // look for a newer upload every 5 minutes
+    setInterval(_pollVersion,5*60*1000);
   } catch(e){
     console.error(e);
     const lm=document.getElementById('loading-msg');
