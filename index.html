@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- NINELIVES v20261003-2 -->
+<!-- NINELIVES v20261003-3 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -96,6 +96,11 @@ tr:hover td{background:rgba(201,168,76,.03)}
 .pin-key:active{transform:scale(.95)}
 .sec{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;margin:20px 0 8px;padding-bottom:6px;border-bottom:0.5px solid var(--border)}
 .audience-tag{display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:0.5px solid var(--border);border-radius:20px;padding:4px 10px;font-size:12px;margin:3px}
+.lang-wrap{display:flex;align-items:center;justify-content:flex-end;gap:6px;font-size:13px;margin-bottom:10px}
+.lang-sel{width:auto;max-width:150px;padding:5px 8px;font-size:12px}
+.header .lang-sel{max-width:104px}
+.header .btn{white-space:nowrap}
+@media(max-width:520px){.header{padding:12px 14px}}
 .sync-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--text-dim);margin-left:6px;vertical-align:middle}
 .sync-dot.live{background:var(--green)}.sync-dot.saving{background:var(--gold)}
 @media(max-width:520px){
@@ -136,10 +141,11 @@ tr:hover td{background:rgba(201,168,76,.03)}
 <!-- SITE CLOSED -->
 <div id="closed-screen" class="auth-wrap hidden">
   <div class="auth-card" style="text-align:center">
+    <div class="lang-wrap">🌐 <select class="lang-sel" onchange="setLang(this.value)" aria-label="Language"></select></div>
     <div style="font-size:48px;margin-bottom:12px">🚫🎰</div>
     <div style="font-family:'Cinzel',serif;font-size:20px;color:var(--gold);margin-bottom:8px">Nine Lives</div>
     <div id="closed-message" style="color:var(--text-dim);font-size:14px;margin-bottom:20px;line-height:1.7">YOU WANT TO GAMBLE NOW?<br>Please wait — the casino is not open yet! 🐱</div>
-    <div style="font-size:12px;color:var(--text-dim)">Check back soon or contact your guild officer.</div>
+    <div style="font-size:12px;color:var(--text-dim)" data-i18n="closed_hint">Check back soon or contact your guild officer.</div>
     <div style="margin-top:20px">
       <button class="btn" onclick="showAdminLogin()" style="font-size:11px;opacity:.5">Admin ⚙</button>
     </div>
@@ -149,17 +155,18 @@ tr:hover td{background:rgba(201,168,76,.03)}
 <!-- LOGIN -->
 <div id="login-screen" class="auth-wrap hidden">
   <div class="auth-card">
+    <div class="lang-wrap">🌐 <select class="lang-sel" onchange="setLang(this.value)" aria-label="Language"></select></div>
     <div class="auth-icon" id="login-icon">🐱</div>
     <div class="auth-title">Nine Lives</div>
     <div class="auth-sub" id="login-sub">Loading event...</div>
-    <div class="fg"><label class="lbl">Your guild name</label>
+    <div class="fg"><label class="lbl" data-i18n="your_guild_name">Your guild name</label>
       <select id="login-name-select"><option value="">— Select your name —</option></select></div>
     <div id="login-error" class="alert alert-danger hidden"></div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-gold btn-full" onclick="startLogin()">Enter</button>
+      <button class="btn btn-gold btn-full" onclick="startLogin()" data-i18n="enter">Enter</button>
       <button class="btn" onclick="showAdminLogin()" style="white-space:nowrap">Admin ⚙</button>
     </div>
-    <div style="margin-top:12px;text-align:center;font-size:12px;color:var(--text-dim)">New member? <span style="color:var(--gold);cursor:pointer;text-decoration:underline" onclick="showRegister()">Register here</span></div>
+    <div style="margin-top:12px;text-align:center;font-size:12px;color:var(--text-dim)"><span data-i18n="new_member">New member?</span> <span style="color:var(--gold);cursor:pointer;text-decoration:underline" onclick="showRegister()" data-i18n="register_here">Register here</span></div>
   </div>
 </div>
 
@@ -167,10 +174,10 @@ tr:hover td{background:rgba(201,168,76,.03)}
 <div id="register-screen" class="auth-wrap hidden">
   <div class="auth-card">
     <div class="auth-icon">🐱</div>
-    <div class="auth-title">Create Account</div>
-    <div class="auth-sub">Set a 4-digit PIN — only you will know it</div>
-    <div class="fg"><label class="lbl">Guild name</label>
-      <input type="text" id="reg-name" placeholder="Your exact guild name..." /></div>
+    <div class="auth-title" data-i18n="create_account">Create Account</div>
+    <div class="auth-sub" data-i18n="set_pin_sub">Set a 4-digit PIN — only you will know it</div>
+    <div class="fg"><label class="lbl" data-i18n="guild_name">Guild name</label>
+      <input type="text" id="reg-name" placeholder="Your exact guild name..." data-i18n-ph="exact_guild_name" /></div>
     <div id="reg-pin-label" style="text-align:center;font-size:13px;color:var(--text-dim);margin-bottom:8px">Choose your PIN</div>
     <div class="pin-wrap" id="reg-dots">
       <div class="pin-dot" id="rd0"></div><div class="pin-dot" id="rd1"></div>
@@ -178,7 +185,7 @@ tr:hover td{background:rgba(201,168,76,.03)}
     </div>
     <div class="pin-keypad" id="reg-keypad"></div>
     <div id="reg-error" class="alert alert-danger hidden" style="margin-top:12px"></div>
-    <button class="btn" style="width:100%;margin-top:12px" onclick="showLogin()">Back</button>
+    <button class="btn" style="width:100%;margin-top:12px" onclick="showLogin()" data-i18n="back">Back</button>
   </div>
 </div>
 
@@ -186,15 +193,15 @@ tr:hover td{background:rgba(201,168,76,.03)}
 <div id="pin-screen" class="auth-wrap hidden">
   <div class="auth-card">
     <div class="auth-icon">🔑</div>
-    <div class="auth-title" id="pin-title">Welcome back</div>
-    <div class="auth-sub">Enter your 4-digit PIN</div>
+    <div class="auth-title" id="pin-title" data-i18n="welcome_back">Welcome back</div>
+    <div class="auth-sub" data-i18n="enter_pin">Enter your 4-digit PIN</div>
     <div class="pin-wrap" id="pin-dots">
       <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
       <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
     </div>
     <div class="pin-keypad" id="pin-keypad"></div>
     <div id="pin-error" class="alert alert-danger hidden" style="margin-top:12px"></div>
-    <button class="btn" style="width:100%;margin-top:12px" onclick="showLogin()">Back</button>
+    <button class="btn" style="width:100%;margin-top:12px" onclick="showLogin()" data-i18n="back">Back</button>
   </div>
 </div>
 
@@ -208,7 +215,7 @@ tr:hover td{background:rgba(201,168,76,.03)}
       <input type="password" id="admin-pw" placeholder="Enter password..." onkeydown="if(event.key==='Enter')loginAdmin()" /></div>
     <div id="admin-pw-error" class="alert alert-danger hidden"></div>
     <div style="display:flex;gap:8px">
-      <button class="btn" onclick="showLogin()">Back</button>
+      <button class="btn" onclick="showLogin()" data-i18n="back">Back</button>
       <button class="btn btn-gold btn-full" onclick="loginAdmin()">Login</button>
     </div>
   </div>
@@ -221,16 +228,16 @@ tr:hover td{background:rgba(201,168,76,.03)}
       <div class="header-title" id="player-header-title">Nine Lives <span class="sync-dot" id="sync-dot-p"></span></div>
       <div class="header-sub" id="player-name-hdr"></div>
     </div>
-    <button class="btn btn-sm" onclick="logout()">Log out</button>
+    <div class="row"><select class="lang-sel" onchange="setLang(this.value)" aria-label="Language"></select><button class="btn btn-sm" onclick="logout()" data-i18n="logout">Log out</button></div>
   </div>
   <div class="main" style="flex:1">
     <div class="stats-grid" id="player-stats"></div>
     <div class="tab-bar">
-      <button class="tab active" onclick="playerTab(this,'p-matches')">Matches</button>
-      <button class="tab" onclick="playerTab(this,'p-leaderboard')">Leaderboard</button>
-      <button class="tab" onclick="playerTab(this,'p-mybets')">My Bets</button>
-      <button class="tab" onclick="playerTab(this,'p-bank')">🏦 Cat Bank</button>
-      <button class="tab" onclick="playerTab(this,'p-livebets')">🔴 Live Bets</button>
+      <button class="tab active" onclick="playerTab(this,'p-matches')" data-i18n="tab_matches">Matches</button>
+      <button class="tab" onclick="playerTab(this,'p-leaderboard')" data-i18n="tab_leaderboard">Leaderboard</button>
+      <button class="tab" onclick="playerTab(this,'p-mybets')" data-i18n="tab_mybets">My Bets</button>
+      <button class="tab" onclick="playerTab(this,'p-bank')" data-i18n="tab_bank">🏦 Cat Bank</button>
+      <button class="tab" onclick="playerTab(this,'p-livebets')" data-i18n="tab_livebets">🔴 Live Bets</button>
     </div>
     <div id="p-matches"></div>
     <div id="p-leaderboard" class="hidden"></div>
@@ -269,7 +276,7 @@ tr:hover td{background:rgba(201,168,76,.03)}
 
 <!-- MODALS -->
 <div id="bet-modal" class="modal-overlay hidden">
-  <div class="modal"><div class="modal-title">Place Bet</div><div id="bet-modal-content"></div></div>
+  <div class="modal"><div class="modal-title" data-i18n="place_bet">Place Bet</div><div id="bet-modal-content"></div></div>
 </div>
 <div id="add-match-modal" class="modal-overlay hidden">
   <div class="modal"><div class="modal-title" id="add-match-title">Add Match</div><div id="add-match-content"></div></div>
@@ -311,8 +318,73 @@ const _app = initializeApp({
 const _db = getFirestore(_app);
 
 // Bump this on every upload — open tabs on an older version reload themselves.
-const APP_VERSION='20261003-2';
+const APP_VERSION='20261003-3';
 const ADMIN_PW_DEFAULT = "catwins2024";
+
+// ── LANGUAGES ──────────────────────────────
+// Player side only — the admin panel always shows English.
+// To fix a translation, edit the text for that language below.
+const LANGS={"en": "English", "th": "ไทย", "id": "Bahasa Indonesia", "zh": "简体中文", "tl": "Tagalog", "ta": "தமிழ்"};
+const I18N={
+en:{"loading": "Loading event data...", "closed_hint": "Check back soon or contact your guild officer.", "your_guild_name": "Your guild name", "select_name": "— Select your name —", "enter": "Enter", "new_member": "New member?", "register_here": "Register here", "create_account": "Create Account", "set_pin_sub": "Set a 4-digit PIN — only you will know it", "guild_name": "Guild name", "exact_guild_name": "Your exact guild name...", "choose_pin": "Choose your 4-digit PIN", "confirm_pin": "Confirm your PIN", "back": "Back", "welcome_back": "Welcome back", "welcome_name": "Welcome, {name}", "enter_pin": "Enter your 4-digit PIN", "logout": "Log out", "tab_matches": "Matches", "tab_leaderboard": "Leaderboard", "tab_mybets": "My Bets", "tab_bank": "🏦 Cat Bank", "tab_livebets": "🔴 Live Bets", "place_bet": "Place Bet", "err_select_name": "Please select your name", "err_wrong_pin": "Wrong PIN, try again", "err_pin_mismatch": "PINs do not match, try again", "spendable_now": "Spendable Now", "wallet_balance": "wallet balance", "pending_stakes": "Pending Stakes", "locked_in_live_bets": "locked in live bets", "no_active_bets": "no active bets", "debt_owed": "Debt Owed", "loan_plus_interest": "loan {loan} + interest {interest}", "no_debt": "no debt", "net_worth": "Net Worth", "wins": "wins", "matchups_soon": "{event} matchups coming soon — stay tuned!", "n_match": "{n} match", "n_matches": "{n} matches", "n_bet": "{n} bet", "n_bets": "{n} bets", "all_done": "All done", "won_profit": "Won {n} profit", "won": "Won", "lost": "Lost", "walkover": "Walkover", "pending": "Pending", "pending_lc": "pending", "voided": "Voided", "amt_on_pick": "{amt} on {pick}", "correct": "correct", "all3_exact": "All 3 exact", "per_correct_name": "Per correct name: {x} each", "result": "Result", "total_staked": "Total staked", "cc_bet": "CC bet", "finished": "Finished", "betting_open": "Betting open", "betting_closed": "Betting closed", "add_another_bet": "Add Another Bet", "in_bets": "in bets", "you": "you", "top5": "Top 5", "cat_debt_zone": "Cat Debt Zone", "full_leaderboard": "Full leaderboard · {n} players", "rich": "Rich", "poor": "Poor", "bal": "Bal", "locked_in_bets": "locked in bets", "debt": "Debt", "no_bets_placed": "No bets placed yet.", "th_match": "Match", "th_pick": "Pick", "th_bet": "Bet", "odds": "Odds", "your_existing_bets": "Your existing bets:", "pick_exactly_n": "Pick exactly {n} names", "bet_amount_balance": "Bet amount — balance: {bal} CC", "amount_ph": "Amount...", "each_correct_payout": "Each correct name → {part} payout. Get all {n} right → full {full}.", "all_exact_payout": "Get ALL {n} placements correct in exact order → {x}× payout.", "place_1": "1st place", "place_2": "2nd place", "place_3": "3rd place", "cancel": "Cancel", "confirm_bet": "Confirm Bet", "placing": "Placing...", "err_site_closed": "The site is currently closed.", "err_betting_closed": "Betting is closed for this match.", "err_select_exactly": "Select exactly {n} names", "err_valid_amount": "Enter a valid amount", "err_player_not_found": "Player not found", "err_not_enough": "Not enough balance — you have {bal} CC", "err_diff_positions": "Each position must be a different player", "err_placing": "Error placing bet", "err_opponent": "You cannot bet on your opponent", "competing_note": "You are competing in this match. You may only bet on yourself.", "current_crowd_odds": "Current crowd odds", "pick_winner": "Pick winner", "amount_balance": "Amount — balance: {bal} CC", "enter_amount_preview": "Enter an amount to preview your payout ↑", "current_odds_for": "Current odds for {pick}", "if_wins": "If {pick} wins", "floor_popular": "floor — popular pick", "receive_total": "receive {n} total", "cat_bank": "Cat Bank", "bank_closed": "The bank is currently closed. Check back when it opens!", "bank_no_rounds": "No borrowing rounds have been configured yet by admin.", "cat_bank_loans": "Cat Bank — Loans", "bank_explain": "Borrowing increases your balance but not your net worth. Debt is deducted from wealth ranking.", "total_owed": "Total Owed", "cap_used": "Cap Used", "can_borrow": "Can Borrow", "principal_plus_interest": "principal {p} + {r} interest", "amount_to_borrow": "Amount to borrow (max {max} CC)", "loan_explain": "Loan increases your <strong>balance</strong>. Your net worth decreases by the {rate} interest owed.", "take_loan": "Take Loan", "bank_cap_reached": "You have reached the borrowing cap of {max} CC.", "err_max_borrow": "Max borrowable is {max} CC", "active_bets": "Active bets", "cc_in_active_bets": "CC in active bets", "matches": "Matches", "no_matches_yet": "No matches yet.", "no_bets_yet": "No bets yet", "hide_bets": "Hide bets", "live": "🔴 Live", "closed": "Closed", "fmt_name_head-to-head": "Head-to-Head", "fmt_name_exact-ranking": "Exact Ranking", "fmt_name_top3-survivors": "Top 3 Survivors", "fmt_name_first3-eliminated": "First 3 Eliminated", "fmt_instr_head-to-head": "Pick which player you think will win.", "fmt_instr_exact-ranking": "Pick the contestants in the exact finishing order. All 3 positions must be correct to win.", "fmt_instr_top3-survivors": "Pick exactly 3 contestants who will survive the round. Order does not matter — just get the right 3 names!", "fmt_instr_first3-eliminated": "Pick exactly 3 contestants who will be eliminated first. Order does not matter — just get the right 3 names!"},
+th:{"loading": "กำลังโหลดข้อมูลกิจกรรม...", "closed_hint": "กลับมาใหม่เร็ว ๆ นี้ หรือติดต่อเจ้าหน้าที่กิลด์ของคุณ", "your_guild_name": "ชื่อในกิลด์ของคุณ", "select_name": "— เลือกชื่อของคุณ —", "enter": "เข้าสู่ระบบ", "new_member": "สมาชิกใหม่?", "register_here": "ลงทะเบียนที่นี่", "create_account": "สร้างบัญชี", "set_pin_sub": "ตั้ง PIN 4 หลัก — มีแค่คุณที่รู้", "guild_name": "ชื่อในกิลด์", "exact_guild_name": "ชื่อในกิลด์ของคุณ (ต้องตรงเป๊ะ)...", "choose_pin": "ตั้ง PIN 4 หลักของคุณ", "confirm_pin": "ยืนยัน PIN ของคุณ", "back": "กลับ", "welcome_back": "ยินดีต้อนรับกลับมา", "welcome_name": "ยินดีต้อนรับ {name}", "enter_pin": "ใส่ PIN 4 หลักของคุณ", "logout": "ออกจากระบบ", "tab_matches": "แมตช์", "tab_leaderboard": "อันดับ", "tab_mybets": "เดิมพันของฉัน", "tab_bank": "🏦 ธนาคารแมว", "tab_livebets": "🔴 เดิมพันสด", "place_bet": "วางเดิมพัน", "err_select_name": "กรุณาเลือกชื่อของคุณ", "err_wrong_pin": "PIN ไม่ถูกต้อง ลองใหม่อีกครั้ง", "err_pin_mismatch": "PIN ไม่ตรงกัน ลองใหม่อีกครั้ง", "spendable_now": "ใช้ได้ตอนนี้", "wallet_balance": "ยอดในกระเป๋า", "pending_stakes": "เดิมพันที่รอผล", "locked_in_live_bets": "ล็อกอยู่ในเดิมพันที่ยังไม่จบ", "no_active_bets": "ไม่มีเดิมพันที่รอผล", "debt_owed": "หนี้ที่ค้าง", "loan_plus_interest": "เงินกู้ {loan} + ดอกเบี้ย {interest}", "no_debt": "ไม่มีหนี้", "net_worth": "มูลค่าสุทธิ", "wins": "ชนะ", "matchups_soon": "คู่แข่งขันของ {event} กำลังจะมา — รอติดตาม!", "n_match": "{n} แมตช์", "n_matches": "{n} แมตช์", "n_bet": "{n} เดิมพัน", "n_bets": "{n} เดิมพัน", "all_done": "จบแล้วทั้งหมด", "won_profit": "ชนะ กำไร {n}", "won": "ชนะ", "lost": "แพ้", "walkover": "ชนะบาย", "pending": "รอผล", "pending_lc": "รอผล", "voided": "ยกเลิก", "amt_on_pick": "{amt} ที่ {pick}", "correct": "ถูก", "all3_exact": "ถูกทั้ง 3 อันดับ", "per_correct_name": "ต่อชื่อที่ถูก: {x}", "result": "ผล", "total_staked": "ยอดเดิมพันรวม", "cc_bet": "CC ที่เดิมพัน", "finished": "จบแล้ว", "betting_open": "เปิดรับเดิมพัน", "betting_closed": "ปิดรับเดิมพัน", "add_another_bet": "เดิมพันเพิ่ม", "in_bets": "อยู่ในเดิมพัน", "you": "คุณ", "top5": "5 อันดับแรก", "cat_debt_zone": "โซนแมวติดหนี้", "full_leaderboard": "อันดับทั้งหมด · {n} คน", "rich": "รวย", "poor": "จน", "bal": "ยอด", "locked_in_bets": "ล็อกอยู่ในเดิมพัน", "debt": "หนี้", "no_bets_placed": "ยังไม่ได้วางเดิมพัน", "th_match": "แมตช์", "th_pick": "เลือก", "th_bet": "เดิมพัน", "odds": "อัตราจ่าย", "your_existing_bets": "เดิมพันที่คุณวางไว้:", "pick_exactly_n": "เลือก {n} ชื่อพอดี", "bet_amount_balance": "จำนวนเดิมพัน — ยอดคงเหลือ: {bal} CC", "amount_ph": "จำนวน...", "each_correct_payout": "ถูกแต่ละชื่อ → จ่าย {part} ถูกครบ {n} ชื่อ → ได้เต็ม {full}", "all_exact_payout": "ทายถูกครบทั้ง {n} อันดับตามลำดับ → จ่าย {x}×", "place_1": "อันดับ 1", "place_2": "อันดับ 2", "place_3": "อันดับ 3", "cancel": "ยกเลิก", "confirm_bet": "ยืนยันเดิมพัน", "placing": "กำลังวางเดิมพัน...", "err_site_closed": "เว็บไซต์ปิดอยู่ในขณะนี้", "err_betting_closed": "แมตช์นี้ปิดรับเดิมพันแล้ว", "err_select_exactly": "เลือก {n} ชื่อพอดี", "err_valid_amount": "กรุณาใส่จำนวนที่ถูกต้อง", "err_player_not_found": "ไม่พบผู้เล่น", "err_not_enough": "ยอดไม่พอ — คุณมี {bal} CC", "err_diff_positions": "แต่ละอันดับต้องเป็นผู้เล่นคนละคน", "err_placing": "เกิดข้อผิดพลาดในการวางเดิมพัน", "err_opponent": "คุณเดิมพันฝั่งคู่แข่งของตัวเองไม่ได้", "competing_note": "คุณลงแข่งในแมตช์นี้ จึงเดิมพันได้เฉพาะฝั่งตัวเอง", "current_crowd_odds": "อัตราจ่ายตามฝูงชนตอนนี้", "pick_winner": "เลือกผู้ชนะ", "amount_balance": "จำนวน — ยอดคงเหลือ: {bal} CC", "enter_amount_preview": "ใส่จำนวนเพื่อดูยอดที่จะได้รับ ↑", "current_odds_for": "อัตราจ่ายตอนนี้ของ {pick}", "if_wins": "ถ้า {pick} ชนะ", "floor_popular": "ขั้นต่ำ — ตัวเลือกยอดนิยม", "receive_total": "ได้รับรวม {n}", "cat_bank": "ธนาคารแมว", "bank_closed": "ธนาคารปิดอยู่ตอนนี้ กลับมาดูใหม่เมื่อเปิด!", "bank_no_rounds": "แอดมินยังไม่ได้ตั้งรอบการกู้", "cat_bank_loans": "ธนาคารแมว — เงินกู้", "bank_explain": "การกู้ทำให้ยอดเงินเพิ่มขึ้น แต่มูลค่าสุทธิไม่เพิ่ม หนี้จะถูกหักออกจากอันดับความมั่งคั่ง", "total_owed": "หนี้รวม", "cap_used": "วงเงินที่ใช้ไป", "can_borrow": "กู้ได้อีก", "principal_plus_interest": "เงินต้น {p} + ดอกเบี้ย {r}", "amount_to_borrow": "จำนวนที่จะกู้ (สูงสุด {max} CC)", "loan_explain": "เงินกู้เพิ่ม<strong>ยอดเงิน</strong>ของคุณ มูลค่าสุทธิจะลดลงตามดอกเบี้ย {rate} ที่ต้องจ่าย", "take_loan": "กู้เงิน", "bank_cap_reached": "คุณกู้ถึงวงเงินสูงสุด {max} CC แล้ว", "err_max_borrow": "กู้ได้สูงสุด {max} CC", "active_bets": "เดิมพันที่รอผล", "cc_in_active_bets": "CC ในเดิมพันที่รอผล", "matches": "แมตช์", "no_matches_yet": "ยังไม่มีแมตช์", "no_bets_yet": "ยังไม่มีเดิมพัน", "hide_bets": "ซ่อนเดิมพัน", "live": "🔴 สด", "closed": "ปิด", "fmt_name_head-to-head": "ตัวต่อตัว", "fmt_name_exact-ranking": "ทายอันดับเป๊ะ", "fmt_name_top3-survivors": "3 ผู้รอดชีวิต", "fmt_name_first3-eliminated": "3 คนแรกที่ตกรอบ", "fmt_instr_head-to-head": "เลือกผู้เล่นที่คุณคิดว่าจะชนะ", "fmt_instr_exact-ranking": "เลือกผู้เข้าแข่งขันตามลำดับที่จบจริง ต้องถูกครบทั้ง 3 อันดับจึงจะชนะ", "fmt_instr_top3-survivors": "เลือกผู้เข้าแข่งขัน 3 คนที่จะรอดในรอบนี้ ไม่ต้องเรียงลำดับ — แค่ทายให้ถูก 3 ชื่อ!", "fmt_instr_first3-eliminated": "เลือกผู้เข้าแข่งขัน 3 คนที่จะตกรอบก่อน ไม่ต้องเรียงลำดับ — แค่ทายให้ถูก 3 ชื่อ!"},
+id:{"loading": "Memuat data event...", "closed_hint": "Cek lagi nanti atau hubungi officer guild kamu.", "your_guild_name": "Nama guild kamu", "select_name": "— Pilih nama kamu —", "enter": "Masuk", "new_member": "Member baru?", "register_here": "Daftar di sini", "create_account": "Buat Akun", "set_pin_sub": "Buat PIN 4 digit — hanya kamu yang tahu", "guild_name": "Nama guild", "exact_guild_name": "Nama guild kamu (harus persis)...", "choose_pin": "Pilih PIN 4 digit kamu", "confirm_pin": "Konfirmasi PIN kamu", "back": "Kembali", "welcome_back": "Selamat datang kembali", "welcome_name": "Selamat datang, {name}", "enter_pin": "Masukkan PIN 4 digit kamu", "logout": "Keluar", "tab_matches": "Pertandingan", "tab_leaderboard": "Peringkat", "tab_mybets": "Taruhan Saya", "tab_bank": "🏦 Bank Kucing", "tab_livebets": "🔴 Taruhan Live", "place_bet": "Pasang Taruhan", "err_select_name": "Pilih nama kamu dulu", "err_wrong_pin": "PIN salah, coba lagi", "err_pin_mismatch": "PIN tidak cocok, coba lagi", "spendable_now": "Bisa Dipakai", "wallet_balance": "saldo dompet", "pending_stakes": "Taruhan Tertunda", "locked_in_live_bets": "terkunci di taruhan aktif", "no_active_bets": "tidak ada taruhan aktif", "debt_owed": "Utang", "loan_plus_interest": "pinjaman {loan} + bunga {interest}", "no_debt": "tidak ada utang", "net_worth": "Kekayaan Bersih", "wins": "menang", "matchups_soon": "Jadwal pertandingan {event} segera hadir — tunggu ya!", "n_match": "{n} pertandingan", "n_matches": "{n} pertandingan", "n_bet": "{n} taruhan", "n_bets": "{n} taruhan", "all_done": "Semua selesai", "won_profit": "Menang, untung {n}", "won": "Menang", "lost": "Kalah", "walkover": "Walkover (WO)", "pending": "Menunggu", "pending_lc": "menunggu", "voided": "Dibatalkan", "amt_on_pick": "{amt} untuk {pick}", "correct": "benar", "all3_exact": "Ketiganya tepat", "per_correct_name": "Per nama yang benar: {x}", "result": "Hasil", "total_staked": "Total taruhan", "cc_bet": "CC ditaruhkan", "finished": "Selesai", "betting_open": "Taruhan dibuka", "betting_closed": "Taruhan ditutup", "add_another_bet": "Tambah Taruhan", "in_bets": "dalam taruhan", "you": "kamu", "top5": "5 Teratas", "cat_debt_zone": "Zona Utang Kucing", "full_leaderboard": "Peringkat lengkap · {n} pemain", "rich": "Kaya", "poor": "Miskin", "bal": "Saldo", "locked_in_bets": "terkunci di taruhan", "debt": "Utang", "no_bets_placed": "Belum ada taruhan.", "th_match": "Pertandingan", "th_pick": "Pilihan", "th_bet": "Taruhan", "odds": "Odds", "your_existing_bets": "Taruhan kamu saat ini:", "pick_exactly_n": "Pilih tepat {n} nama", "bet_amount_balance": "Jumlah taruhan — saldo: {bal} CC", "amount_ph": "Jumlah...", "each_correct_payout": "Tiap nama yang benar → bayaran {part}. Benar semua {n} → penuh {full}.", "all_exact_payout": "Tebak SEMUA {n} posisi dengan urutan yang tepat → bayaran {x}×.", "place_1": "Juara 1", "place_2": "Juara 2", "place_3": "Juara 3", "cancel": "Batal", "confirm_bet": "Konfirmasi Taruhan", "placing": "Memasang...", "err_site_closed": "Situs sedang ditutup.", "err_betting_closed": "Taruhan untuk pertandingan ini sudah ditutup.", "err_select_exactly": "Pilih tepat {n} nama", "err_valid_amount": "Masukkan jumlah yang valid", "err_player_not_found": "Pemain tidak ditemukan", "err_not_enough": "Saldo tidak cukup — kamu punya {bal} CC", "err_diff_positions": "Tiap posisi harus pemain yang berbeda", "err_placing": "Gagal memasang taruhan", "err_opponent": "Kamu tidak bisa bertaruh untuk lawanmu", "competing_note": "Kamu ikut bertanding di sini. Kamu hanya bisa bertaruh untuk diri sendiri.", "current_crowd_odds": "Odds saat ini (dari taruhan pemain)", "pick_winner": "Pilih pemenang", "amount_balance": "Jumlah — saldo: {bal} CC", "enter_amount_preview": "Masukkan jumlah untuk melihat perkiraan bayaran ↑", "current_odds_for": "Odds saat ini untuk {pick}", "if_wins": "Jika {pick} menang", "floor_popular": "minimum — pilihan populer", "receive_total": "terima total {n}", "cat_bank": "Bank Kucing", "bank_closed": "Bank sedang tutup. Cek lagi saat sudah buka!", "bank_no_rounds": "Admin belum mengatur ronde pinjaman.", "cat_bank_loans": "Bank Kucing — Pinjaman", "bank_explain": "Pinjaman menambah saldo kamu tapi tidak menambah kekayaan bersih. Utang dikurangkan dari peringkat kekayaan.", "total_owed": "Total Utang", "cap_used": "Limit Terpakai", "can_borrow": "Bisa Pinjam", "principal_plus_interest": "pokok {p} + bunga {r}", "amount_to_borrow": "Jumlah pinjaman (maks {max} CC)", "loan_explain": "Pinjaman menambah <strong>saldo</strong> kamu. Kekayaan bersih berkurang sebesar bunga {rate}.", "take_loan": "Ambil Pinjaman", "bank_cap_reached": "Kamu sudah mencapai batas pinjaman {max} CC.", "err_max_borrow": "Maksimal pinjaman {max} CC", "active_bets": "Taruhan aktif", "cc_in_active_bets": "CC dalam taruhan aktif", "matches": "Pertandingan", "no_matches_yet": "Belum ada pertandingan.", "no_bets_yet": "Belum ada taruhan", "hide_bets": "Sembunyikan taruhan", "live": "🔴 Live", "closed": "Ditutup", "fmt_name_head-to-head": "Satu Lawan Satu", "fmt_name_exact-ranking": "Peringkat Tepat", "fmt_name_top3-survivors": "3 Penyintas Teratas", "fmt_name_first3-eliminated": "3 Tereliminasi Pertama", "fmt_instr_head-to-head": "Pilih pemain yang menurutmu akan menang.", "fmt_instr_exact-ranking": "Pilih peserta sesuai urutan finis yang tepat. Ketiga posisi harus benar untuk menang.", "fmt_instr_top3-survivors": "Pilih tepat 3 peserta yang akan bertahan di ronde ini. Urutan tidak penting — cukup tebak 3 nama yang benar!", "fmt_instr_first3-eliminated": "Pilih tepat 3 peserta yang akan tereliminasi lebih dulu. Urutan tidak penting — cukup tebak 3 nama yang benar!"},
+zh:{"loading": "正在加载活动数据...", "closed_hint": "请稍后再来，或联系你的公会管理员。", "your_guild_name": "你的公会名字", "select_name": "— 选择你的名字 —", "enter": "进入", "new_member": "新成员？", "register_here": "在这里注册", "create_account": "创建账号", "set_pin_sub": "设置4位数PIN码 — 只有你知道", "guild_name": "公会名字", "exact_guild_name": "你的公会名字（需完全一致）...", "choose_pin": "设置你的4位数PIN码", "confirm_pin": "确认你的PIN码", "back": "返回", "welcome_back": "欢迎回来", "welcome_name": "欢迎，{name}", "enter_pin": "输入你的4位数PIN码", "logout": "退出", "tab_matches": "比赛", "tab_leaderboard": "排行榜", "tab_mybets": "我的下注", "tab_bank": "🏦 猫猫银行", "tab_livebets": "🔴 实时下注", "place_bet": "下注", "err_select_name": "请选择你的名字", "err_wrong_pin": "PIN码错误，请重试", "err_pin_mismatch": "两次PIN码不一致，请重试", "spendable_now": "可用余额", "wallet_balance": "钱包余额", "pending_stakes": "待结算下注", "locked_in_live_bets": "锁定在进行中的下注", "no_active_bets": "没有进行中的下注", "debt_owed": "欠款", "loan_plus_interest": "贷款 {loan} + 利息 {interest}", "no_debt": "无欠款", "net_worth": "净资产", "wins": "胜", "matchups_soon": "{event} 对阵即将公布 — 敬请期待！", "n_match": "{n} 场比赛", "n_matches": "{n} 场比赛", "n_bet": "{n} 注", "n_bets": "{n} 注", "all_done": "全部结束", "won_profit": "赢了，盈利 {n}", "won": "赢", "lost": "输", "walkover": "弃权", "pending": "待结算", "pending_lc": "待结算", "voided": "已作废", "amt_on_pick": "{amt} 押 {pick}", "correct": "正确", "all3_exact": "3个全中", "per_correct_name": "每猜中一个名字：{x}", "result": "结果", "total_staked": "总下注额", "cc_bet": "CC 已下注", "finished": "已结束", "betting_open": "开放下注", "betting_closed": "停止下注", "add_another_bet": "再下一注", "in_bets": "下注中", "you": "你", "top5": "前5名", "cat_debt_zone": "猫猫负债区", "full_leaderboard": "完整排行榜 · {n} 名玩家", "rich": "富", "poor": "穷", "bal": "余额", "locked_in_bets": "锁定在下注中", "debt": "欠款", "no_bets_placed": "还没有下注。", "th_match": "比赛", "th_pick": "选择", "th_bet": "下注", "odds": "赔率", "your_existing_bets": "你已有的下注：", "pick_exactly_n": "请选择恰好 {n} 个名字", "bet_amount_balance": "下注金额 — 余额：{bal} CC", "amount_ph": "金额...", "each_correct_payout": "每猜中一个名字 → 赔付 {part}。{n} 个全中 → 全额 {full}。", "all_exact_payout": "{n} 个名次全部按顺序猜中 → 赔付 {x}×。", "place_1": "第1名", "place_2": "第2名", "place_3": "第3名", "cancel": "取消", "confirm_bet": "确认下注", "placing": "下注中...", "err_site_closed": "网站目前已关闭。", "err_betting_closed": "这场比赛已停止下注。", "err_select_exactly": "请选择恰好 {n} 个名字", "err_valid_amount": "请输入有效金额", "err_player_not_found": "找不到玩家", "err_not_enough": "余额不足 — 你有 {bal} CC", "err_diff_positions": "每个名次必须是不同的玩家", "err_placing": "下注出错", "err_opponent": "你不能押自己的对手", "competing_note": "你是这场比赛的参赛者，只能押自己。", "current_crowd_odds": "当前赔率（由大家下注决定）", "pick_winner": "选择胜者", "amount_balance": "金额 — 余额：{bal} CC", "enter_amount_preview": "输入金额以预览赔付 ↑", "current_odds_for": "{pick} 的当前赔率", "if_wins": "如果 {pick} 获胜", "floor_popular": "保底 — 热门选择", "receive_total": "共获得 {n}", "cat_bank": "猫猫银行", "bank_closed": "银行目前已关闭，开放后再来吧！", "bank_no_rounds": "管理员尚未设置借款轮次。", "cat_bank_loans": "猫猫银行 — 贷款", "bank_explain": "借款会增加你的余额，但不会增加净资产。欠款会从财富排名中扣除。", "total_owed": "欠款总额", "cap_used": "已用额度", "can_borrow": "可借额度", "principal_plus_interest": "本金 {p} + {r} 利息", "amount_to_borrow": "借款金额（最多 {max} CC）", "loan_explain": "贷款会增加你的<strong>余额</strong>。你的净资产会减少 {rate} 的利息。", "take_loan": "借款", "bank_cap_reached": "你已达到借款上限 {max} CC。", "err_max_borrow": "最多可借 {max} CC", "active_bets": "进行中的下注", "cc_in_active_bets": "进行中下注的 CC", "matches": "比赛", "no_matches_yet": "还没有比赛。", "no_bets_yet": "还没有下注", "hide_bets": "收起下注", "live": "🔴 进行中", "closed": "已关闭", "fmt_name_head-to-head": "一对一", "fmt_name_exact-ranking": "精确排名", "fmt_name_top3-survivors": "前3名幸存者", "fmt_name_first3-eliminated": "最先淘汰的3人", "fmt_instr_head-to-head": "选择你认为会赢的玩家。", "fmt_instr_exact-ranking": "按确切的完赛顺序选择参赛者。3个名次必须全部正确才算赢。", "fmt_instr_top3-survivors": "选择恰好3名会在本轮幸存的参赛者。顺序不重要 — 猜对3个名字就行！", "fmt_instr_first3-eliminated": "选择恰好3名最先被淘汰的参赛者。顺序不重要 — 猜对3个名字就行！"},
+tl:{"loading": "Nilo-load ang data ng event...", "closed_hint": "Bumalik mamaya o kontakin ang guild officer mo.", "your_guild_name": "Pangalan mo sa guild", "select_name": "— Piliin ang pangalan mo —", "enter": "Pumasok", "new_member": "Bagong miyembro?", "register_here": "Mag-register dito", "create_account": "Gumawa ng Account", "set_pin_sub": "Mag-set ng 4-digit PIN — ikaw lang ang makakaalam", "guild_name": "Pangalan sa guild", "exact_guild_name": "Eksaktong pangalan mo sa guild...", "choose_pin": "Pumili ng 4-digit PIN mo", "confirm_pin": "Kumpirmahin ang PIN mo", "back": "Bumalik", "welcome_back": "Welcome back", "welcome_name": "Welcome, {name}", "enter_pin": "I-enter ang 4-digit PIN mo", "logout": "Mag-log out", "tab_matches": "Mga Laban", "tab_leaderboard": "Leaderboard", "tab_mybets": "Mga Taya Ko", "tab_bank": "🏦 Cat Bank", "tab_livebets": "🔴 Live na Taya", "place_bet": "Tumaya", "err_select_name": "Piliin muna ang pangalan mo", "err_wrong_pin": "Maling PIN, subukan ulit", "err_pin_mismatch": "Hindi magkatugma ang PIN, subukan ulit", "spendable_now": "Magagastos Ngayon", "wallet_balance": "balanse ng wallet", "pending_stakes": "Mga Nakabinbing Taya", "locked_in_live_bets": "naka-lock sa mga aktibong taya", "no_active_bets": "walang aktibong taya", "debt_owed": "Utang", "loan_plus_interest": "utang {loan} + interes {interest}", "no_debt": "walang utang", "net_worth": "Net Worth", "wins": "panalo", "matchups_soon": "Malapit na ang mga laban ng {event} — abangan!", "n_match": "{n} laban", "n_matches": "{n} laban", "n_bet": "{n} taya", "n_bets": "{n} taya", "all_done": "Tapos na lahat", "won_profit": "Panalo, {n} na tubo", "won": "Panalo", "lost": "Talo", "walkover": "Walkover", "pending": "Nakabinbin", "pending_lc": "nakabinbin", "voided": "Kinansela", "amt_on_pick": "{amt} kay {pick}", "correct": "tama", "all3_exact": "Tama lahat ng 3", "per_correct_name": "Bawat tamang pangalan: {x}", "result": "Resulta", "total_staked": "Kabuuang taya", "cc_bet": "CC na taya", "finished": "Tapos na", "betting_open": "Bukas ang tayaan", "betting_closed": "Sarado ang tayaan", "add_another_bet": "Tumaya Ulit", "in_bets": "nasa taya", "you": "ikaw", "top5": "Top 5", "cat_debt_zone": "Cat Debt Zone", "full_leaderboard": "Buong leaderboard · {n} manlalaro", "rich": "Mayaman", "poor": "Mahirap", "bal": "Bal", "locked_in_bets": "naka-lock sa taya", "debt": "Utang", "no_bets_placed": "Wala pang taya.", "th_match": "Laban", "th_pick": "Pinili", "th_bet": "Taya", "odds": "Odds", "your_existing_bets": "Mga kasalukuyan mong taya:", "pick_exactly_n": "Pumili ng eksaktong {n} pangalan", "bet_amount_balance": "Halaga ng taya — balanse: {bal} CC", "amount_ph": "Halaga...", "each_correct_payout": "Bawat tamang pangalan → {part} na bayad. Tama lahat ng {n} → buong {full}.", "all_exact_payout": "Tamaan LAHAT ng {n} pwesto sa eksaktong pagkakasunod → {x}× na bayad.", "place_1": "Unang pwesto", "place_2": "Ikalawang pwesto", "place_3": "Ikatlong pwesto", "cancel": "Kanselahin", "confirm_bet": "Kumpirmahin ang Taya", "placing": "Tinataya...", "err_site_closed": "Sarado ang site ngayon.", "err_betting_closed": "Sarado na ang tayaan sa laban na ito.", "err_select_exactly": "Pumili ng eksaktong {n} pangalan", "err_valid_amount": "Maglagay ng tamang halaga", "err_player_not_found": "Hindi nahanap ang manlalaro", "err_not_enough": "Kulang ang balanse — may {bal} CC ka", "err_diff_positions": "Dapat magkaibang manlalaro ang bawat pwesto", "err_placing": "May error sa pagtaya", "err_opponent": "Hindi ka pwedeng tumaya sa kalaban mo", "competing_note": "Kasali ka sa laban na ito. Sa sarili mo lang ikaw pwedeng tumaya.", "current_crowd_odds": "Kasalukuyang odds (ayon sa mga taya)", "pick_winner": "Piliin ang mananalo", "amount_balance": "Halaga — balanse: {bal} CC", "enter_amount_preview": "Maglagay ng halaga para makita ang makukuha mo ↑", "current_odds_for": "Kasalukuyang odds para kay {pick}", "if_wins": "Kung manalo si {pick}", "floor_popular": "minimum — sikat na pili", "receive_total": "makakatanggap ng {n} lahat", "cat_bank": "Cat Bank", "bank_closed": "Sarado ang bangko ngayon. Bumalik kapag bukas na!", "bank_no_rounds": "Wala pang naka-set na round ng pautang ang admin.", "cat_bank_loans": "Cat Bank — Mga Utang", "bank_explain": "Dinadagdagan ng utang ang balanse mo pero hindi ang net worth. Ibinabawas ang utang sa ranking ng yaman.", "total_owed": "Kabuuang Utang", "cap_used": "Nagamit na Limit", "can_borrow": "Pwedeng Utangin", "principal_plus_interest": "principal {p} + {r} interes", "amount_to_borrow": "Halagang uutangin (max {max} CC)", "loan_explain": "Dinadagdagan ng utang ang <strong>balanse</strong> mo. Bababa ang net worth mo ng {rate} na interes.", "take_loan": "Umutang", "bank_cap_reached": "Naabot mo na ang limit ng utang na {max} CC.", "err_max_borrow": "Max na pwedeng utangin ay {max} CC", "active_bets": "Mga aktibong taya", "cc_in_active_bets": "CC sa mga aktibong taya", "matches": "Mga Laban", "no_matches_yet": "Wala pang laban.", "no_bets_yet": "Wala pang taya", "hide_bets": "Itago ang mga taya", "live": "🔴 Live", "closed": "Sarado", "fmt_name_head-to-head": "Head-to-Head", "fmt_name_exact-ranking": "Eksaktong Ranking", "fmt_name_top3-survivors": "Top 3 Survivors", "fmt_name_first3-eliminated": "Unang 3 Matatanggal", "fmt_instr_head-to-head": "Piliin kung sinong manlalaro ang sa tingin mo ay mananalo.", "fmt_instr_exact-ranking": "Piliin ang mga kalahok sa eksaktong pagkakasunod ng pagtatapos. Dapat tama ang lahat ng 3 pwesto para manalo.", "fmt_instr_top3-survivors": "Pumili ng eksaktong 3 kalahok na makakaligtas sa round. Hindi mahalaga ang pagkakasunod — basta tama ang 3 pangalan!", "fmt_instr_first3-eliminated": "Pumili ng eksaktong 3 kalahok na unang matatanggal. Hindi mahalaga ang pagkakasunod — basta tama ang 3 pangalan!"},
+ta:{"loading": "நிகழ்வு தரவு ஏற்றப்படுகிறது...", "closed_hint": "சிறிது நேரம் கழித்து மீண்டும் பாருங்கள் அல்லது உங்கள் கில்ட் அதிகாரியைத் தொடர்பு கொள்ளுங்கள்.", "your_guild_name": "உங்கள் கில்ட் பெயர்", "select_name": "— உங்கள் பெயரைத் தேர்ந்தெடுக்கவும் —", "enter": "நுழை", "new_member": "புதிய உறுப்பினரா?", "register_here": "இங்கே பதிவு செய்யுங்கள்", "create_account": "கணக்கை உருவாக்கு", "set_pin_sub": "4 இலக்க PIN அமைக்கவும் — உங்களுக்கு மட்டுமே தெரியும்", "guild_name": "கில்ட் பெயர்", "exact_guild_name": "உங்கள் சரியான கில்ட் பெயர்...", "choose_pin": "உங்கள் 4 இலக்க PIN-ஐத் தேர்ந்தெடுக்கவும்", "confirm_pin": "உங்கள் PIN-ஐ உறுதிப்படுத்தவும்", "back": "பின்செல்", "welcome_back": "மீண்டும் வருக", "welcome_name": "வருக, {name}", "enter_pin": "உங்கள் 4 இலக்க PIN-ஐ உள்ளிடவும்", "logout": "வெளியேறு", "tab_matches": "போட்டிகள்", "tab_leaderboard": "தரவரிசை", "tab_mybets": "என் பந்தயங்கள்", "tab_bank": "🏦 பூனை வங்கி", "tab_livebets": "🔴 நேரடி பந்தயங்கள்", "place_bet": "பந்தயம் கட்டு", "err_select_name": "உங்கள் பெயரைத் தேர்ந்தெடுக்கவும்", "err_wrong_pin": "தவறான PIN, மீண்டும் முயற்சிக்கவும்", "err_pin_mismatch": "PIN பொருந்தவில்லை, மீண்டும் முயற்சிக்கவும்", "spendable_now": "இப்போது செலவிடக்கூடியது", "wallet_balance": "பணப்பை இருப்பு", "pending_stakes": "நிலுவை பந்தயங்கள்", "locked_in_live_bets": "செயலில் உள்ள பந்தயங்களில் பூட்டப்பட்டது", "no_active_bets": "செயலில் பந்தயம் இல்லை", "debt_owed": "கடன் நிலுவை", "loan_plus_interest": "கடன் {loan} + வட்டி {interest}", "no_debt": "கடன் இல்லை", "net_worth": "நிகர மதிப்பு", "wins": "வெற்றிகள்", "matchups_soon": "{event} போட்டிகள் விரைவில் வரும் — காத்திருங்கள்!", "n_match": "{n} போட்டி", "n_matches": "{n} போட்டிகள்", "n_bet": "{n} பந்தயம்", "n_bets": "{n} பந்தயங்கள்", "all_done": "அனைத்தும் முடிந்தது", "won_profit": "வெற்றி, லாபம் {n}", "won": "வெற்றி", "lost": "தோல்வி", "walkover": "வாக்ஓவர்", "pending": "நிலுவையில்", "pending_lc": "நிலுவையில்", "voided": "ரத்து செய்யப்பட்டது", "amt_on_pick": "{pick} மீது {amt}", "correct": "சரி", "all3_exact": "3-ம் சரியாக", "per_correct_name": "ஒவ்வொரு சரியான பெயருக்கும்: {x}", "result": "முடிவு", "total_staked": "மொத்த பந்தயம்", "cc_bet": "CC பந்தயம்", "finished": "முடிந்தது", "betting_open": "பந்தயம் திறந்துள்ளது", "betting_closed": "பந்தயம் மூடப்பட்டது", "add_another_bet": "மற்றொரு பந்தயம் சேர்", "in_bets": "பந்தயத்தில்", "you": "நீங்கள்", "top5": "முதல் 5", "cat_debt_zone": "பூனை கடன் மண்டலம்", "full_leaderboard": "முழு தரவரிசை · {n} வீரர்கள்", "rich": "பணக்காரர்", "poor": "ஏழை", "bal": "இருப்பு", "locked_in_bets": "பந்தயத்தில் பூட்டப்பட்டது", "debt": "கடன்", "no_bets_placed": "இன்னும் பந்தயம் கட்டவில்லை.", "th_match": "போட்டி", "th_pick": "தேர்வு", "th_bet": "பந்தயம்", "odds": "விகிதம்", "your_existing_bets": "உங்கள் தற்போதைய பந்தயங்கள்:", "pick_exactly_n": "சரியாக {n} பெயர்களைத் தேர்ந்தெடுக்கவும்", "bet_amount_balance": "பந்தயத் தொகை — இருப்பு: {bal} CC", "amount_ph": "தொகை...", "each_correct_payout": "ஒவ்வொரு சரியான பெயருக்கும் → {part} பரிசு. {n}-ம் சரியானால் → முழு {full}.", "all_exact_payout": "{n} இடங்களையும் சரியான வரிசையில் கணித்தால் → {x}× பரிசு.", "place_1": "1-ம் இடம்", "place_2": "2-ம் இடம்", "place_3": "3-ம் இடம்", "cancel": "ரத்து", "confirm_bet": "பந்தயத்தை உறுதிப்படுத்து", "placing": "பந்தயம் வைக்கப்படுகிறது...", "err_site_closed": "தளம் தற்போது மூடப்பட்டுள்ளது.", "err_betting_closed": "இந்தப் போட்டிக்கான பந்தயம் மூடப்பட்டது.", "err_select_exactly": "சரியாக {n} பெயர்களைத் தேர்ந்தெடுக்கவும்", "err_valid_amount": "சரியான தொகையை உள்ளிடவும்", "err_player_not_found": "வீரர் கிடைக்கவில்லை", "err_not_enough": "இருப்பு போதவில்லை — உங்களிடம் {bal} CC உள்ளது", "err_diff_positions": "ஒவ்வொரு இடத்திற்கும் வெவ்வேறு வீரர் இருக்க வேண்டும்", "err_placing": "பந்தயம் வைப்பதில் பிழை", "err_opponent": "உங்கள் எதிராளி மீது பந்தயம் கட்ட முடியாது", "competing_note": "நீங்கள் இந்தப் போட்டியில் பங்கேற்கிறீர்கள். உங்கள் மீது மட்டுமே பந்தயம் கட்டலாம்.", "current_crowd_odds": "தற்போதைய விகிதம் (அனைவரின் பந்தயப்படி)", "pick_winner": "வெற்றியாளரைத் தேர்ந்தெடு", "amount_balance": "தொகை — இருப்பு: {bal} CC", "enter_amount_preview": "உங்கள் பரிசை முன்னோட்டம் பார்க்க தொகையை உள்ளிடவும் ↑", "current_odds_for": "{pick}-க்கான தற்போதைய விகிதம்", "if_wins": "{pick} வென்றால்", "floor_popular": "குறைந்தபட்சம் — பிரபலமான தேர்வு", "receive_total": "மொத்தம் {n} பெறுவீர்கள்", "cat_bank": "பூனை வங்கி", "bank_closed": "வங்கி தற்போது மூடப்பட்டுள்ளது. திறந்ததும் மீண்டும் பாருங்கள்!", "bank_no_rounds": "நிர்வாகி இன்னும் கடன் சுற்றுகளை அமைக்கவில்லை.", "cat_bank_loans": "பூனை வங்கி — கடன்கள்", "bank_explain": "கடன் உங்கள் இருப்பை அதிகரிக்கும், ஆனால் நிகர மதிப்பை அல்ல. கடன் செல்வ தரவரிசையிலிருந்து கழிக்கப்படும்.", "total_owed": "மொத்த கடன்", "cap_used": "பயன்படுத்திய வரம்பு", "can_borrow": "கடன் பெறலாம்", "principal_plus_interest": "அசல் {p} + {r} வட்டி", "amount_to_borrow": "கடன் தொகை (அதிகபட்சம் {max} CC)", "loan_explain": "கடன் உங்கள் <strong>இருப்பை</strong> அதிகரிக்கும். உங்கள் நிகர மதிப்பு {rate} வட்டியால் குறையும்.", "take_loan": "கடன் பெறு", "bank_cap_reached": "நீங்கள் {max} CC கடன் வரம்பை எட்டிவிட்டீர்கள்.", "err_max_borrow": "அதிகபட்ச கடன் {max} CC", "active_bets": "செயலில் உள்ள பந்தயங்கள்", "cc_in_active_bets": "செயலில் உள்ள பந்தயங்களில் CC", "matches": "போட்டிகள்", "no_matches_yet": "இன்னும் போட்டிகள் இல்லை.", "no_bets_yet": "இன்னும் பந்தயம் இல்லை", "hide_bets": "பந்தயங்களை மறை", "live": "🔴 நேரலை", "closed": "மூடப்பட்டது", "fmt_name_head-to-head": "நேருக்கு நேர்", "fmt_name_exact-ranking": "சரியான தரவரிசை", "fmt_name_top3-survivors": "முதல் 3 உயிர்பிழைத்தவர்கள்", "fmt_name_first3-eliminated": "முதலில் வெளியேறும் 3 பேர்", "fmt_instr_head-to-head": "யார் வெல்வார்கள் என்று நினைக்கிறீர்களோ அவரைத் தேர்ந்தெடுக்கவும்.", "fmt_instr_exact-ranking": "போட்டியாளர்களை சரியான முடிவு வரிசையில் தேர்ந்தெடுக்கவும். வெற்றி பெற 3 இடங்களும் சரியாக இருக்க வேண்டும்.", "fmt_instr_top3-survivors": "இந்தச் சுற்றில் தப்பிக்கும் 3 போட்டியாளர்களைத் தேர்ந்தெடுக்கவும். வரிசை முக்கியமில்லை — சரியான 3 பெயர்கள் போதும்!", "fmt_instr_first3-eliminated": "முதலில் வெளியேறும் 3 போட்டியாளர்களைத் தேர்ந்தெடுக்கவும். வரிசை முக்கியமில்லை — சரியான 3 பெயர்கள் போதும்!"}
+};
+let _lang='en';
+try{
+  const _saved=localStorage.getItem('ninelives-lang');
+  if(_saved&&I18N[_saved]) _lang=_saved;
+  else{
+    const _nav=(navigator.language||'en').toLowerCase();
+    const _guess=_nav.startsWith('th')?'th':_nav.startsWith('id')?'id':_nav.startsWith('zh')?'zh':(_nav.startsWith('tl')||_nav.startsWith('fil'))?'tl':_nav.startsWith('ta')?'ta':'en';
+    _lang=_guess;
+  }
+}catch(e){}
+function tr(key,vars){
+  const L=isAdmin?'en':_lang;
+  let str=(I18N[L]&&I18N[L][key]!=null)?I18N[L][key]:(I18N.en[key]!=null?I18N.en[key]:key);
+  if(vars) for(const k in vars) str=str.split('{'+k+'}').join(vars[k]);
+  return str;
+}
+function nMatches(n){return tr(n===1?'n_match':'n_matches',{n});}
+function nBets(n){return tr(n===1?'n_bet':'n_bets',{n});}
+// Built-in formats are translated; anything the admin has renamed or rewritten shows as typed.
+function fmtName(f){
+  if(!f) return undefined;
+  const d=DEFAULT_FORMATS.find(x=>x.id===f.id);
+  return d&&d.name===f.name?tr('fmt_name_'+f.id):f.name;
+}
+function fmtInstr(f){
+  if(!f) return undefined;
+  const d=DEFAULT_FORMATS.find(x=>x.id===f.id);
+  return d&&d.instructions===f.instructions?tr('fmt_instr_'+f.id):f.instructions;
+}
+function _applyStaticI18n(){
+  document.documentElement.lang=_lang;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=tr(el.dataset.i18n);});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=tr(el.dataset.i18nPh);});
+  document.querySelectorAll('.lang-sel').forEach(sel=>{
+    if(!sel.options.length) sel.innerHTML=Object.entries(LANGS).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('');
+    sel.value=_lang;
+  });
+  _regLabel();
+}
+function _regLabel(){
+  const el=document.getElementById('reg-pin-label');
+  if(el) el.textContent=tr(regStage==='confirm'?'confirm_pin':'choose_pin');
+}
+function setLang(l){
+  if(!I18N[l]) l='en';
+  _lang=l;
+  try{localStorage.setItem('ninelives-lang',l);}catch(e){}
+  _applyStaticI18n();
+  if(S.currentUser) refreshCurrentView();
+  else{const sel=document.getElementById('login-name-select');const v=sel.value;populateDropdown();sel.value=v;}
+}
+
 let ADMIN_PW = ADMIN_PW_DEFAULT;
 // BET_MULT removed — use S.betMult (parimutuel floor, set per-event in Admin → Settings)
 
@@ -607,7 +679,7 @@ function showLogin(){
   populateDropdown();showScreen('login-screen');
 }
 function showAdminLogin(){showScreen('admin-login-screen');}
-function showRegister(){buildKeypad('reg-keypad',regKey);showScreen('register-screen');}
+function showRegister(){const rn=document.getElementById('reg-name');rn.readOnly=false;rn.value='';regBuf='';regConf='';regStage='set';updateDots('rd','');_regLabel();buildKeypad('reg-keypad',regKey);showScreen('register-screen');}
 function logout(){S.currentUser=null;isAdmin=false;_clearSession();showLogin();}
 
 // ── SESSION (stay signed in after refresh) ──
@@ -669,7 +741,7 @@ function _newBetId(){return 'b'+(Date.now())+Math.random().toString(36).slice(2,
 
 function populateDropdown(){
   const sel=document.getElementById('login-name-select');
-  sel.innerHTML='<option value="">— Select your name —</option>'+
+  sel.innerHTML='<option value="">'+tr('select_name')+'</option>'+
     [...S.players].sort((a,b)=>a.name.localeCompare(b.name))
       .map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
 }
@@ -677,17 +749,17 @@ function populateDropdown(){
 let pendingName='';
 function startLogin(){
   const name=document.getElementById('login-name-select').value;
-  if(!name){showErr('login-error','Please select your name');return;}
+  if(!name){showErr('login-error',tr('err_select_name'));return;}
   pendingName=name;
   if(S.pins[norm(name)]){
-    document.getElementById('pin-title').textContent='Welcome, '+name;
+    document.getElementById('pin-title').textContent=tr('welcome_name',{name});
     pinBuf='';updateDots('pd',pinBuf);buildKeypad('pin-keypad',pinKey);
     showScreen('pin-screen');
   } else {
     document.getElementById('reg-name').value=name;
     document.getElementById('reg-name').readOnly=true;
     regBuf='';regConf='';regStage='set';
-    document.getElementById('reg-pin-label').textContent='Choose your 4-digit PIN';
+    _regLabel();
     updateDots('rd','');buildKeypad('reg-keypad',regKey);
     showScreen('register-screen');
   }
@@ -722,7 +794,7 @@ function pinKey(k){
       document.getElementById('player-name-hdr').textContent=pendingName;
       refreshStats();renderPMatches();
     } else {
-      showErr('pin-error','Wrong PIN, try again');
+      showErr('pin-error',tr('err_wrong_pin'));
       pinBuf='';updateDots('pd',pinBuf);
     }
   },150);
@@ -734,7 +806,7 @@ function regKey(k){
   updateDots('rd',regStage==='set'?regBuf:regConf);
   if(regStage==='set'&&regBuf.length===4) setTimeout(()=>{
     regStage='confirm';regConf='';
-    document.getElementById('reg-pin-label').textContent='Confirm your PIN';
+    _regLabel();
     updateDots('rd','');
   },150);
   else if(regStage==='confirm'&&regConf.length===4) setTimeout(async ()=>{
@@ -752,9 +824,9 @@ function regKey(k){
       _curPTab='p-matches';
       refreshStats();renderPMatches();
     } else {
-      showErr('reg-error','PINs do not match, try again');
+      showErr('reg-error',tr('err_pin_mismatch'));
       regStage='set';regBuf='';regConf='';
-      document.getElementById('reg-pin-label').textContent='Choose your 4-digit PIN';
+      _regLabel();
       updateDots('rd','');
     }
   },150);
@@ -772,6 +844,7 @@ function playerTab(el,id){
   el.classList.add('active');
   ['p-matches','p-leaderboard','p-mybets','p-bank','p-livebets'].forEach(x=>{const e=document.getElementById(x);if(e)e.classList.add('hidden');});
   document.getElementById(id).classList.remove('hidden');
+  if(id==='p-matches') renderPMatches();
   if(id==='p-leaderboard') renderLeaderboard();
   if(id==='p-mybets') renderMyBets();
   if(id==='p-bank') renderPlayerBank();
@@ -812,24 +885,24 @@ function refreshStats(){
   const total     = myBets.filter(b=>b.result!==null&&b.result!=='walkover'&&b.result!=='voided').length;
   document.getElementById('player-stats').innerHTML=`
     <div class="stat-card">
-      <div class="stat-label">Spendable Now</div>
+      <div class="stat-label">${tr('spendable_now')}</div>
       <div class="stat-val ${spendable<0?'red':''}">${fmt(spendable)}</div>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">wallet balance</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">${tr('wallet_balance')}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Pending Stakes</div>
+      <div class="stat-label">${tr('pending_stakes')}</div>
       <div class="stat-val" style="color:${pending>0?'var(--gold)':'var(--text-dim)'}">${pending>0?fmt(pending):'—'}</div>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">${pending>0?'locked in live bets':'no active bets'}</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">${pending>0?tr('locked_in_live_bets'):tr('no_active_bets')}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Debt Owed</div>
+      <div class="stat-label">${tr('debt_owed')}</div>
       <div class="stat-val ${debt>0?'red':''}">${debt>0?'−'+fmt(debt):'—'}</div>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">${(p.loanPrincipal||0)>0?'loan '+fmt(p.loanPrincipal||0)+' + interest '+fmt(p.interestOwed||0):'no debt'}</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">${(p.loanPrincipal||0)>0?tr('loan_plus_interest',{loan:fmt(p.loanPrincipal||0),interest:fmt(p.interestOwed||0)}):tr('no_debt')}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Net Worth</div>
+      <div class="stat-label">${tr('net_worth')}</div>
       <div class="stat-val ${worth<0?'red':'green'}">${fmt(worth)}</div>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">wins: ${won}/${total}</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:4px">${tr('wins')}: ${won}/${total}</div>
     </div>`;
 }
 
@@ -837,7 +910,7 @@ function refreshStats(){
 function renderPMatches(){
   const ms = S.matches.filter(m=>!(m.p1==='TBD'&&m.p2==='TBD'));
   if(!ms.length){
-    document.getElementById('p-matches').innerHTML='<div class="alert alert-info">'+( S.eventSubtitle||'Event')+' matchups coming soon — stay tuned!</div>';
+    document.getElementById('p-matches').innerHTML='<div class="alert alert-info">'+tr('matchups_soon',{event:S.eventSubtitle||'Event'})+'</div>';
     return;
   }
   const _pmCats=[];const _pmMap={};
@@ -845,7 +918,7 @@ function renderPMatches(){
   let html='';
   _pmCats.forEach(cat=>{
     const cms=_pmMap[cat];const done=cms.every(m=>m.status==='done');const k='p-'+cat;const cl=_collapsedCats.has(k);
-    html+=`<button onclick="_tcP('${k}')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;margin-bottom:8px;font-family:inherit"><div style="display:flex;align-items:center;gap:8px"><span style="font-family:'Cinzel',serif;font-size:12px;color:var(--gold)">${cat}</span><span style="font-size:11px;color:var(--text-dim)">${cms.length} match${cms.length!==1?'es':''}</span>${done?'<span class=\"badge badge-done\" style=\"font-size:10px;padding:1px 6px\">All done</span>':''}</div><span style="color:var(--text-dim);font-size:11px">${cl?'▶':'▼'}</span></button>`;
+    html+=`<button onclick="_tcP('${k}')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:7px 12px;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;margin-bottom:8px;font-family:inherit"><div style="display:flex;align-items:center;gap:8px"><span style="font-family:'Cinzel',serif;font-size:12px;color:var(--gold)">${cat}</span><span style="font-size:11px;color:var(--text-dim)">${nMatches(cms.length)}</span>${done?'<span class=\"badge badge-done\" style=\"font-size:10px;padding:1px 6px\">'+tr('all_done')+'</span>':''}</div><span style="color:var(--text-dim);font-size:11px">${cl?'▶':'▼'}</span></button>`;
     if(!cl){html+='<div class="match-grid">';cms.forEach(m=>{
     const myBets = S.bets.filter(b=>b.matchId===m.id&&norm(b.playerName)===norm(S.currentUser)&&b.result!=='voided');
     const myActive = myBets.filter(b=>b.result===null);
@@ -856,10 +929,10 @@ function renderPMatches(){
     if(myBets.length){
       const lines=myBets.map(b=>{
         const payout=b.result==='won'?Math.round(b.amount*(b.settledOdds||S.betMult||2)):0;
-        const res=b.result==='won'?` — Won ${fmt(payout-b.amount)} profit 🎉`
-          :b.result==='lost'?` — Lost 💸`
-          :b.result==='walkover'?' — Walkover':' — Pending';
-        return `${fmt(b.amount)} on <strong>${b.pick}</strong>${res}`;
+        const res=b.result==='won'?` — ${tr('won_profit',{n:fmt(payout-b.amount)})} 🎉`
+          :b.result==='lost'?` — ${tr('lost')} 💸`
+          :b.result==='walkover'?' — '+tr('walkover'):' — '+tr('pending');
+        return `${tr('amt_on_pick',{amt:fmt(b.amount),pick:'<strong>'+b.pick+'</strong>'})}${res}`;
       }).join('<br>');
       myBetsSummary=`<div class="alert alert-gold" style="margin:6px 0;font-size:12px">${lines}</div>`;
     }
@@ -867,7 +940,7 @@ function renderPMatches(){
     const isSurv=m.matchType==='survivors'||isExactSet(m);
     const isMulti=isMultiPick(m);
     const fmt_pm=getFormat(m);
-    const formatLabel=fmt_pm?.name||(isRanked?'Exact Ranking':isSurv?'Top 3 Survivors':null);
+    const formatLabel=fmtName(fmt_pm)||(isRanked?'Exact Ranking':isSurv?'Top 3 Survivors':null);
     const contestants=(m.contestants||m.p1||'').split(',').map(s=>s.trim()).filter(Boolean);
     const totalPot=S.bets.filter(b=>b.matchId===m.id&&b.result!=='voided').reduce((s,b)=>s+b.amount,0);
 
@@ -878,21 +951,21 @@ function renderPMatches(){
         if(b.betType==='ranked'){
           const parts=(b.pick||'').split('|').map(p=>{const[pos,name]=p.split(':');const medals=['','🥇','🥈','🥉'];return `${medals[parseInt(pos)]||pos} ${name}`;});
           pickDisplay=parts.join(' · ');
-          const correctNote=b.correctPositions!=null?` (${b.correctPositions}/3 correct)`:'';
+          const correctNote=b.correctPositions!=null?` (${b.correctPositions}/3 ${tr('correct')})`:'';
           const paidOut=b.result==='won'?Math.round(b.amount*(b.settledOdds||10)):0;
-          const res=b.result==='won'?` — Won +${fmt(paidOut-b.amount)} 🎉${correctNote}`:b.result==='lost'?` — Lost 💸`:' — Pending';
+          const res=b.result==='won'?` — ${tr('won')} +${fmt(paidOut-b.amount)} 🎉${correctNote}`:b.result==='lost'?` — ${tr('lost')} 💸`:' — '+tr('pending');
           return `${fmt(b.amount)} CC: ${pickDisplay}${res}`;
         }
         if(b.betType==='survivors'){
           const names=Array.isArray(b.pickArray)&&b.pickArray.length?b.pickArray.join(', '):(b.pick||'').split(',').map(s=>s.trim()).filter(Boolean).join(', ');
-          const correctNote=b.correctNames!=null?` (${b.correctNames}/3 correct)`:'';
+          const correctNote=b.correctNames!=null?` (${b.correctNames}/3 ${tr('correct')})`:'';
           const paidOut=b.result==='won'?Math.round(b.amount*(b.settledOdds||1))-b.amount:0;
-          const res=b.result==='won'?` — Won +${fmt(paidOut)} 🎉${correctNote}`:b.result==='lost'?` — Lost 💸`:' — Pending';
+          const res=b.result==='won'?` — ${tr('won')} +${fmt(paidOut)} 🎉${correctNote}`:b.result==='lost'?` — ${tr('lost')} 💸`:' — '+tr('pending');
           return `${fmt(b.amount)} CC: ${names}${res}`;
         }
         const payout2=b.result==='won'?Math.round(b.amount*(b.settledOdds||S.betMult||2)):0;
-        const res=b.result==='won'?` — Won +${fmt(payout2-b.amount)} 🎉`:b.result==='lost'?` — Lost 💸`:b.result==='walkover'?' — Walkover':' — Pending';
-        return `${fmt(b.amount)} on <strong>${b.pick}</strong>${res}`;
+        const res=b.result==='won'?` — ${tr('won')} +${fmt(payout2-b.amount)} 🎉`:b.result==='lost'?` — ${tr('lost')} 💸`:b.result==='walkover'?' — '+tr('walkover'):' — '+tr('pending');
+        return `${tr('amt_on_pick',{amt:fmt(b.amount),pick:'<strong>'+b.pick+'</strong>'})}${res}`;
       }).join('<br>');
       myBetsSummary=`<div class="alert alert-gold" style="margin:6px 0;font-size:12px">${lines}</div>`;
     }
@@ -900,9 +973,9 @@ function renderPMatches(){
     const survFormat=(S.bettingFormats||[]).find(f=>f.id==='top3-survivors')||{fixedMult:5};
     const rankFormat=(S.bettingFormats||[]).find(f=>f.id==='exact-ranking');
     const rankPayoutInfo=rankFormat?.payoutType==='tiered'&&rankFormat.tiers?.length
-      ?rankFormat.tiers.map(t=>`${t.correct} correct → ${t.mult}×`).join(' · ')
-      :`All 3 exact → ${rankFormat?.fixedMult||10}×`;
-    const payoutInfo=isRanked?rankPayoutInfo:isSurv?`Per correct name: ${survFormat.fixedMult||5}×/3 each`:'';
+      ?rankFormat.tiers.map(t=>`${t.correct} ${tr('correct')} → ${t.mult}×`).join(' · ')
+      :`${tr('all3_exact')} → ${rankFormat?.fixedMult||10}×`;
+    const payoutInfo=isRanked?rankPayoutInfo:isSurv?tr('per_correct_name',{x:(survFormat.fixedMult||5)+'×/3'}):'';
     const matchBody = isMulti
       ? `<div style="padding:10px 0">
           <div style="font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${formatLabel}</div>
@@ -912,19 +985,19 @@ function renderPMatches(){
               return `<div style="background:var(--bg3);border-radius:var(--radius-sm);padding:8px 10px;font-family:'Cinzel',serif;font-size:13px;color:${isWinner?'var(--gold)':'var(--text)'}">${isWinner?'✦ ':''}${name}</div>`;
             }).join('')}
           </div>
-          ${m.winner&&m.winner!=='Walkover'?`<div class="alert alert-success" style="margin-top:8px;padding:6px 10px;font-size:12px">Result: ${isSurv?m.winner:m.winner.split('|').map(r=>{const[p,n]=r.split(':');const medals=['','🥇','🥈','🥉'];return medals[parseInt(p)]+' '+n;}).join(' · ')}</div>`:''}
-          <div style="font-size:11px;color:var(--text-dim);margin-top:6px">Total staked: ${fmt(totalPot)} CC${payoutInfo?' · '+payoutInfo:''}</div>
+          ${m.winner&&m.winner!=='Walkover'?`<div class="alert alert-success" style="margin-top:8px;padding:6px 10px;font-size:12px">${tr('result')}: ${isSurv?m.winner:m.winner.split('|').map(r=>{const[p,n]=r.split(':');const medals=['','🥇','🥈','🥉'];return medals[parseInt(p)]+' '+n;}).join(' · ')}</div>`:''}
+          <div style="font-size:11px;color:var(--text-dim);margin-top:6px">${tr('total_staked')}: ${fmt(totalPot)} CC${payoutInfo?' · '+payoutInfo:''}</div>
         </div>`
       : `<div class="match-vs">
           <div class="match-player">
             <div class="match-player-name ${m.winner===m.p1?'winner':''}">${m.p1}${m.winner===m.p1?' ✦':''}</div>
-            <div class="match-pot">${fmt(p1pot)} CC bet</div>
+            <div class="match-pot">${fmt(p1pot)} ${tr('cc_bet')}</div>
             ${m.status!=='done'?`<div style="font-size:11px;color:var(--gold);margin-top:2px">${oddsLabel(calcOdds(m.id,m.p1,0).odds)}</div>`:''}
           </div>
           <div class="vs-sep">VS</div>
           <div class="match-player">
             <div class="match-player-name ${m.winner===m.p2?'winner':''}">${m.p2}${m.winner===m.p2?' ✦':''}</div>
-            <div class="match-pot">${fmt(p2pot)} CC bet</div>
+            <div class="match-pot">${fmt(p2pot)} ${tr('cc_bet')}</div>
             ${m.status!=='done'?`<div style="font-size:11px;color:var(--blue);margin-top:2px">${oddsLabel(calcOdds(m.id,m.p2,0).odds)}</div>`:''}
           </div>
         </div>`;
@@ -932,11 +1005,11 @@ function renderPMatches(){
     html+=`<div class="match-card">
       <div class="row-between" style="margin-bottom:8px">
         <span style="font-size:11px;color:var(--text-dim)">${m.id}${info?' · '+info:''}${formatLabel?` · <span style="color:var(--gold)">${formatLabel}</span>`:''}</span>
-        <span class="badge ${m.status==='done'?'badge-done':m.bettingOpen?'badge-open':'badge-closed'}">${m.status==='done'?'Finished':m.bettingOpen?'Betting open':'Betting closed'}</span>
+        <span class="badge ${m.status==='done'?'badge-done':m.bettingOpen?'badge-open':'badge-closed'}">${m.status==='done'?tr('finished'):m.bettingOpen?tr('betting_open'):tr('betting_closed')}</span>
       </div>
       ${matchBody}
       ${myBetsSummary}
-      ${m.status!=='done'&&m.bettingOpen?`<button class="btn btn-gold btn-full" style="margin-top:6px" onclick="openBetModal('${m.id}')">${myActive.length?'Add Another Bet':'Place Bet'}</button>`:''}
+      ${m.status!=='done'&&m.bettingOpen?`<button class="btn btn-gold btn-full" style="margin-top:6px" onclick="openBetModal('${m.id}')">${myActive.length?tr('add_another_bet'):tr('place_bet')}</button>`:''}
     </div>`;
     });html+='</div>';} // close cms.forEach + match-grid + if !cl
   }); // close _pmCats.forEach
@@ -967,14 +1040,14 @@ function renderLeaderboard(){
 
   function spotRow(p,rank,opts={}){
     const isMe=norm(p.name)===norm(S.currentUser);
-    const pendTag=p.pending>0?`<span style="font-size:10px;color:var(--gold);background:rgba(201,168,76,.12);border:0.5px solid rgba(201,168,76,.3);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle">⏳ ${fmt(p.pending)} CC in bets</span>`:'';
+    const pendTag=p.pending>0?`<span style="font-size:10px;color:var(--gold);background:rgba(201,168,76,.12);border:0.5px solid rgba(201,168,76,.3);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle">⏳ ${fmt(p.pending)} CC ${tr('in_bets')}</span>`:'';
     const rc=opts.rankColor||'var(--gold)';
     const wc=p.worth<0?'var(--red)':(opts.worthColor||'var(--green)');
     return `<div style="display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:0.5px solid rgba(201,168,76,.07)">
       <span style="font-family:'Cinzel',serif;font-size:13px;color:${rc};width:32px;flex-shrink:0;text-align:center">#${rank}</span>
       <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
         <div class="avatar" style="${avStyle(p.name)}">${initials(p.name)}</div>
-        <span style="font-weight:${isMe?'600':'400'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}${isMe?' <span style="font-size:11px;color:var(--text-dim)">(you)</span>':''}</span>
+        <span style="font-weight:${isMe?'600':'400'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}${isMe?' <span style="font-size:11px;color:var(--text-dim)">('+tr('you')+')</span>':''}</span>
         ${pendTag}
       </div>
       <span style="font-family:'Cinzel',serif;font-size:15px;color:${wc};flex-shrink:0">${fmt(p.worth)}</span>
@@ -985,8 +1058,8 @@ function renderLeaderboard(){
     <div style="background:var(--bg2);border:0.5px solid rgba(201,168,76,.35);border-radius:var(--radius);overflow:hidden">
       <div style="padding:10px 16px;background:rgba(201,168,76,.07);border-bottom:0.5px solid rgba(201,168,76,.2);display:flex;align-items:center;gap:8px">
         <span style="font-size:16px">🏆</span>
-        <span style="font-family:'Cinzel',serif;font-size:13px;color:var(--gold)">Top 5</span>
-        <span style="font-size:11px;color:var(--text-dim);margin-left:auto">Net Worth</span>
+        <span style="font-family:'Cinzel',serif;font-size:13px;color:var(--gold)">${tr('top5')}</span>
+        <span style="font-size:11px;color:var(--text-dim);margin-left:auto">${tr('net_worth')}</span>
       </div>
       ${top5.map((p,i)=>{
         const rc=['#F0D080','#C8D0D8','#C08040','var(--text-dim)','var(--text-dim)'];
@@ -996,8 +1069,8 @@ function renderLeaderboard(){
     <div style="background:var(--bg2);border:0.5px solid rgba(192,64,64,.3);border-radius:var(--radius);overflow:hidden">
       <div style="padding:10px 16px;background:rgba(192,64,64,.06);border-bottom:0.5px solid rgba(192,64,64,.2);display:flex;align-items:center;gap:8px">
         <span style="font-size:16px">🐱</span>
-        <span style="font-family:'Cinzel',serif;font-size:13px;color:var(--red)">Cat Debt Zone</span>
-        <span style="font-size:11px;color:var(--text-dim);margin-left:auto">Net Worth</span>
+        <span style="font-family:'Cinzel',serif;font-size:13px;color:var(--red)">${tr('cat_debt_zone')}</span>
+        <span style="font-size:11px;color:var(--text-dim);margin-left:auto">${tr('net_worth')}</span>
       </div>
       ${btm5.map((p,i)=>spotRow(p,ps.length-i,{rankColor:'var(--red)',worthColor:'var(--red)'})).join('')}
     </div>
@@ -1015,10 +1088,10 @@ function renderLeaderboard(){
     :'padding:3px 9px;font-size:11px;background:transparent;color:var(--text-dim);border:0.5px solid var(--border);border-radius:4px;cursor:pointer;font-family:inherit';
 
   html+=`<div style="display:flex;align-items:center;justify-content:space-between;margin:20px 0 8px">
-    <span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em">Full leaderboard · ${full.length} players</span>
+    <span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em">${tr('full_leaderboard',{n:full.length})}</span>
     <div style="display:flex;gap:4px">
-      <button onclick="setLbSort('desc')" style="${btnStyle('desc')}">↓ Rich</button>
-      <button onclick="setLbSort('asc')"  style="${btnStyle('asc')}">↑ Poor</button>
+      <button onclick="setLbSort('desc')" style="${btnStyle('desc')}">↓ ${tr('rich')}</button>
+      <button onclick="setLbSort('asc')"  style="${btnStyle('asc')}">↑ ${tr('poor')}</button>
       <button onclick="setLbSort('alpha')" style="${btnStyle('alpha')}">A–Z</button>
     </div>
   </div>
@@ -1036,8 +1109,8 @@ function renderLeaderboard(){
       ${rankLabel}
       <div class="avatar" style="${avStyle(p.name)};width:28px;height:28px;font-size:10px;flex-shrink:0">${initials(p.name)}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:${isMe?'600':'400'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}${isMe?' <span style="font-size:10px;color:var(--text-dim)">(you)</span>':''}</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-top:1px">Bal: <span style="color:var(--text)">${fmt(p.spendable)}</span>${p.pending>0?` · <span style="color:var(--gold)">⏳ ${fmt(p.pending)} CC locked in bets</span>`:''}${(p.debt||0)>0?` · Debt: <span style="color:var(--red)">−${fmt(p.debt)}</span>`:''}</div>
+        <div style="font-size:13px;font-weight:${isMe?'600':'400'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}${isMe?' <span style="font-size:10px;color:var(--text-dim)">('+tr('you')+')</span>':''}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:1px">${tr('bal')}: <span style="color:var(--text)">${fmt(p.spendable)}</span>${p.pending>0?` · <span style="color:var(--gold)">⏳ ${fmt(p.pending)} CC ${tr('locked_in_bets')}</span>`:''}${(p.debt||0)>0?` · ${tr('debt')}: <span style="color:var(--red)">−${fmt(p.debt)}</span>`:''}</div>
       </div>
       <span style="font-family:'Cinzel',serif;font-size:14px;color:${p.worth<0?'var(--red)':'var(--green)'};flex-shrink:0">${fmt(p.worth)}</span>
     </div>`;
@@ -1050,11 +1123,11 @@ function renderLeaderboard(){
 function renderMyBets(){
   const mb = S.bets.filter(b=>norm(b.playerName)===norm(S.currentUser));
   if(!mb.length){
-    document.getElementById('p-mybets').innerHTML='<div class="alert alert-info">No bets placed yet.</div>';
+    document.getElementById('p-mybets').innerHTML='<div class="alert alert-info">'+tr('no_bets_placed')+'</div>';
     return;
   }
   let html=`<div class="tbl-wrap"><table>
-    <thead><tr><th>Match</th><th>Pick</th><th style="text-align:right">Bet</th><th style="text-align:right">Odds</th><th style="text-align:right">Result</th></tr></thead><tbody>`;
+    <thead><tr><th>${tr('th_match')}</th><th>${tr('th_pick')}</th><th style="text-align:right">${tr('th_bet')}</th><th style="text-align:right">${tr('odds')}</th><th style="text-align:right">${tr('result')}</th></tr></thead><tbody>`;
   const _rankFmt=(S.bettingFormats||[]).find(f=>f.id==='exact-ranking');
   const _survFmt=(S.bettingFormats||[]).find(f=>f.id==='top3-survivors')||{fixedMult:5};
   // For ranked: if tiered, show tiers summary; if fixed, show that mult
@@ -1074,24 +1147,24 @@ function renderMyBets(){
       const paidOut=b.result==='won'?Math.round(b.amount*mult)-b.amount:0;
       resHtml = b.result==='won'?`<span class="badge badge-open">+${fmt(paidOut)}</span>`:
         b.result==='lost'?`<span class="badge badge-closed">-${fmt(b.amount)}</span>`:
-        b.result==='walkover'?`<span class="badge badge-walkover">Walkover</span>`:
-        b.result==='voided'?`<span class="badge badge-walkover">Voided</span>`:
-        `<span class="badge badge-pending">Pending</span>`;
+        b.result==='walkover'?`<span class="badge badge-walkover">${tr('walkover')}</span>`:
+        b.result==='voided'?`<span class="badge badge-walkover">${tr('voided')}</span>`:
+        `<span class="badge badge-pending">${tr('pending')}</span>`;
       oddsHtml=b.settledOdds?`${b.settledOdds}×`:_rankOddsLabel;
     } else if(b.betType==='survivors'){
       if(b.result==='won'){
         const paidOut=Math.round(b.amount*(b.settledOdds||1))-b.amount;
-        const correctNote=b.correctNames!=null?` (${b.correctNames}/3 correct)`:'';
+        const correctNote=b.correctNames!=null?` (${b.correctNames}/3 ${tr('correct')})`:'';
         resHtml=`<span class="badge badge-open">+${fmt(paidOut)}${correctNote}</span>`;
         oddsHtml=b.settledOdds?`${b.settledOdds}×`:`${_survDefaultMult}×`;
       } else if(b.result==='lost'){
         resHtml=`<span class="badge badge-closed">-${fmt(b.amount)} (0/3)</span>`;oddsHtml=`${_survDefaultMult}×`;
       } else if(b.result==='walkover'){
-        resHtml=`<span class="badge badge-walkover">Walkover</span>`;oddsHtml='—';
+        resHtml=`<span class="badge badge-walkover">${tr('walkover')}</span>`;oddsHtml='—';
       } else if(b.result==='voided'){
-        resHtml=`<span class="badge badge-walkover">Voided</span>`;oddsHtml='—';
+        resHtml=`<span class="badge badge-walkover">${tr('voided')}</span>`;oddsHtml='—';
       } else {
-        resHtml=`<span class="badge badge-pending">Pending</span>`;oddsHtml=`${_survDefaultMult}×`;
+        resHtml=`<span class="badge badge-pending">${tr('pending')}</span>`;oddsHtml=`${_survDefaultMult}×`;
       }
     } else if(b.result==='won'){
       const paid=b.settledOdds?Math.round(b.amount*b.settledOdds):Math.round(b.amount*(S.betMult||2));
@@ -1100,13 +1173,13 @@ function renderMyBets(){
     } else if(b.result==='lost'){
       resHtml=`<span class="badge badge-closed">-${fmt(b.amount)}</span>`;oddsHtml='—';
     } else if(b.result==='walkover'){
-      resHtml=`<span class="badge badge-walkover">Walkover</span>`;oddsHtml='—';
+      resHtml=`<span class="badge badge-walkover">${tr('walkover')}</span>`;oddsHtml='—';
     } else if(b.result==='voided'){
-      resHtml=`<span class="badge badge-walkover">Voided</span>`;oddsHtml='—';
+      resHtml=`<span class="badge badge-walkover">${tr('voided')}</span>`;oddsHtml='—';
     } else {
       const liveOdds=m&&m.matchType==='standard'?calcOdds(b.matchId,b.pick,0).odds:(S.betMult||2);
       oddsHtml=m&&m.matchType==='standard'?`<span style="color:var(--gold)">${oddsLabel(liveOdds)}</span>`:'—';
-      resHtml=`<span class="badge badge-pending">Pending</span>`;
+      resHtml=`<span class="badge badge-pending">${tr('pending')}</span>`;
     }
     let pickDisplay=b.pick;
     if(b.betType==='ranked'){
@@ -1118,7 +1191,7 @@ function renderMyBets(){
     const isSurvMatch=isExactSet(m);
     const isRankedMatch=isExactOrder(m);
     const fmt_mb=getFormat(m);
-    const matchLabel=m?(isRankedMatch||isSurvMatch?m.id+' ('+(fmt_mb?.name||m.matchType)+')':m.id+' · '+m.p1+' vs '+m.p2):b.matchId;
+    const matchLabel=m?(isRankedMatch||isSurvMatch?m.id+' ('+(fmtName(fmt_mb)||m.matchType)+')':m.id+' · '+m.p1+' vs '+m.p2):b.matchId;
     html+=`<tr><td style="font-size:12px">${matchLabel}</td><td style="font-weight:500;font-size:12px">${pickDisplay}</td><td style="text-align:right">${fmt(b.amount)}</td><td style="text-align:right;font-size:12px">${oddsHtml}</td><td style="text-align:right">${resHtml}</td></tr>`;
   });
   html+=`</tbody></table></div>`;
@@ -1131,8 +1204,8 @@ function openRankedBetModal(matchId){
   const fmt_=getFormat(m);
   const isOrder=isExactOrder(m);
   const isSet=isExactSet(m);
-  const formatName=fmt_?.name||(isOrder?'Exact Ranking':'Multi-pick');
-  const instructions=fmt_?.instructions||(isOrder?'Pick the contestants in the exact finishing order.':'Pick exactly 3 names. Order does not matter.');
+  const formatName=fmtName(fmt_)||(isOrder?'Exact Ranking':'Multi-pick');
+  const instructions=fmtInstr(fmt_)||(isOrder?'Pick the contestants in the exact finishing order.':'Pick exactly 3 names. Order does not matter.');
   const mult=fmt_?.fixedMult||5;
   const selections=fmt_?.selections||3;
   const p=getPlayer(S.currentUser);
@@ -1140,7 +1213,7 @@ function openRankedBetModal(matchId){
   const contestants=(m.contestants||m.p1||'').split(',').map(s=>s.trim()).filter(Boolean);
   const priorBets=S.bets.filter(b=>b.matchId===matchId&&norm(b.playerName)===norm(S.currentUser)&&b.result!=='voided');
   const priorHtml=priorBets.length
-    ?`<div class="alert alert-gold" style="margin-bottom:12px;font-size:12px"><strong>Your existing bets:</strong><br>${priorBets.map(b=>{
+    ?`<div class="alert alert-gold" style="margin-bottom:12px;font-size:12px"><strong>${tr('your_existing_bets')}</strong><br>${priorBets.map(b=>{
         if(b.betType==='survivors'||b.betType==='exact-set'){
           const names=Array.isArray(b.pickArray)&&b.pickArray.length?b.pickArray.join(', '):(b.pick||'').split(',').map(s=>s.trim()).filter(Boolean).join(', ');
           return `${fmt(b.amount)} CC — ${names||b.pick}`;
@@ -1158,23 +1231,23 @@ function openRankedBetModal(matchId){
       </label>`).join('');
     formHtml=`
       <div class="fg">
-        <label class="lbl">Pick exactly ${selections} names <span id="surv-pick-count" style="color:var(--gold)">(0 / ${selections})</span></label>
+        <label class="lbl">${tr('pick_exactly_n',{n:selections})} <span id="surv-pick-count" style="color:var(--gold)">(0 / ${selections})</span></label>
         <div style="display:flex;flex-direction:column;gap:6px">${checkboxList}</div>
       </div>
-      <div class="fg"><label class="lbl">Bet amount — balance: ${fmt(bal)} CC</label>
-        <input type="number" id="bet-amount" min="1" max="${bal}" placeholder="Amount..." /></div>
+      <div class="fg"><label class="lbl">${tr('bet_amount_balance',{bal:fmt(bal)})}</label>
+        <input type="number" id="bet-amount" min="1" max="${bal}" placeholder="${tr('amount_ph')}" /></div>
       <div class="alert alert-gold" style="margin-bottom:14px;font-size:12px">
-        Each correct name → <strong>${mult}×/${selections}</strong> payout. Get all ${selections} right → full <strong>${mult}×</strong>.
+        ${tr('each_correct_payout',{part:'<strong>'+mult+'×/'+selections+'</strong>',n:selections,full:'<strong>'+mult+'×</strong>'})}
       </div>`;
   } else {
     const opts=contestants.map(n=>`<option value="${n}">${n}</option>`).join('');
-    const payoutNote=(()=>{if(fmt_?.payoutType==='tiered'&&fmt_.tiers?.length){return fmt_.tiers.map(t=>`${t.correct} correct → ${t.mult}×`).join(' · ');}return `Get ALL ${selections} placements correct in exact order → ${fmt_?.fixedMult||10}× payout.`;})();
+    const payoutNote=(()=>{if(fmt_?.payoutType==='tiered'&&fmt_.tiers?.length){return fmt_.tiers.map(t=>`${t.correct} ${tr('correct')} → ${t.mult}×`).join(' · ');}return tr('all_exact_payout',{n:selections,x:(fmt_?.fixedMult||10)});})();
     formHtml=`
-      <div class="fg"><label class="lbl">🥇 1st place</label><select id="rank-1">${opts}</select></div>
-      <div class="fg"><label class="lbl">🥈 2nd place</label><select id="rank-2">${opts}</select></div>
-      <div class="fg"><label class="lbl">🥉 3rd place</label><select id="rank-3">${opts}</select></div>
-      <div class="fg"><label class="lbl">Bet amount — balance: ${fmt(bal)} CC</label>
-        <input type="number" id="bet-amount" min="1" max="${bal}" placeholder="Amount..." /></div>
+      <div class="fg"><label class="lbl">🥇 ${tr('place_1')}</label><select id="rank-1">${opts}</select></div>
+      <div class="fg"><label class="lbl">🥈 ${tr('place_2')}</label><select id="rank-2">${opts}</select></div>
+      <div class="fg"><label class="lbl">🥉 ${tr('place_3')}</label><select id="rank-3">${opts}</select></div>
+      <div class="fg"><label class="lbl">${tr('bet_amount_balance',{bal:fmt(bal)})}</label>
+        <input type="number" id="bet-amount" min="1" max="${bal}" placeholder="${tr('amount_ph')}" /></div>
       <div class="alert alert-gold" style="margin-bottom:14px;font-size:12px">${payoutNote}</div>`;
   }
 
@@ -1187,8 +1260,8 @@ function openRankedBetModal(matchId){
     ${formHtml}
     <div id="bet-error" class="alert alert-danger hidden"></div>
     <div class="btn-row">
-      <button class="btn" style="flex:1" onclick="closeModal('bet-modal')">Cancel</button>
-      <button class="btn btn-gold" style="flex:1" onclick="${isSet?'submitSurvivorsBet':'submitRankedBet'}('${matchId}')">Confirm Bet</button>
+      <button class="btn" style="flex:1" onclick="closeModal('bet-modal')">${tr('cancel')}</button>
+      <button class="btn btn-gold" style="flex:1" onclick="${isSet?'submitSurvivorsBet':'submitRankedBet'}('${matchId}')">${tr('confirm_bet')}</button>
     </div>`;
   document.getElementById('bet-modal').classList.remove('hidden');
   if(!isSet) setTimeout(()=>_refreshRankOpts(),50);
@@ -1208,25 +1281,25 @@ function _refreshRankOpts(){
 }
 
 async function submitSurvivorsBet(matchId){
-  if(!S.siteOpen){showErr('bet-error','The site is currently closed.');return;}
+  if(!S.siteOpen){showErr('bet-error',tr('err_site_closed'));return;}
   const m=S.matches.find(x=>x.id===matchId);
-  if(!m?.bettingOpen){showErr('bet-error','Betting is closed for this match.');return;}
+  if(!m?.bettingOpen){showErr('bet-error',tr('err_betting_closed'));return;}
   const fmt_=getFormat(m);
   const selections=fmt_?.selections||3;
   const checked=Array.from(document.querySelectorAll('[id^="surv-pick-"]:checked')).map(c=>c.value);
   const amount=parseInt(document.getElementById('bet-amount')?.value)||0;
-  if(checked.length!==selections){showErr('bet-error',`Select exactly ${selections} names`);return;}
-  if(!amount||amount<=0){showErr('bet-error','Enter a valid amount');return;}
+  if(checked.length!==selections){showErr('bet-error',tr('err_select_exactly',{n:selections}));return;}
+  if(!amount||amount<=0){showErr('bet-error',tr('err_valid_amount'));return;}
   const btn=document.querySelector('#bet-modal .btn-gold:last-child');
-  if(btn){btn.disabled=true;btn.textContent='Placing...';}
+  if(btn){btn.disabled=true;btn.textContent=tr('placing');}
   try{
     const p=getPlayer(S.currentUser);
-    if(!p?.id){showErr('bet-error','Player not found');if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;}
+    if(!p?.id){showErr('bet-error',tr('err_player_not_found'));if(btn){btn.disabled=false;btn.textContent=tr('confirm_bet');}return;}
     const liveSnap=await getDoc(doc(_db,'players',p.id));
     const liveBal=liveSnap.exists()?liveSnap.data().balance||0:p.balance||0;
     if(amount>liveBal){
-      showErr('bet-error',`Not enough balance — you have ${fmt(liveBal)} CC`);
-      if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;
+      showErr('bet-error',tr('err_not_enough',{bal:fmt(liveBal)}));
+      if(btn){btn.disabled=false;btn.textContent=tr('confirm_bet');}return;
     }
     const pickArray=[...checked].sort();
     const pick=pickArray.join(',');
@@ -1240,31 +1313,31 @@ async function submitSurvivorsBet(matchId){
     _postDiscord('🎲 **'+S.currentUser+'** bet **'+fmt(amount)+' CC** — '+(fmt_?.name||'Pick')+': '+pickArray.join(', ')+' ('+matchId+')');
     closeModal('bet-modal');
   }catch(e){
-    showErr('bet-error','Error placing bet: '+e.message);
-    if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}
+    showErr('bet-error',tr('err_placing')+': '+e.message);
+    if(btn){btn.disabled=false;btn.textContent=tr('confirm_bet');}
   }
 }
 
 async function submitRankedBet(matchId){
-  if(!S.siteOpen){showErr('bet-error','The site is currently closed.');return;}
+  if(!S.siteOpen){showErr('bet-error',tr('err_site_closed'));return;}
   const m_=S.matches.find(x=>x.id===matchId);
-  if(!m_?.bettingOpen){showErr('bet-error','Betting is closed for this match.');return;}
+  if(!m_?.bettingOpen){showErr('bet-error',tr('err_betting_closed'));return;}
   const r1=document.getElementById('rank-1')?.value;
   const r2=document.getElementById('rank-2')?.value;
   const r3=document.getElementById('rank-3')?.value;
   const amount=parseInt(document.getElementById('bet-amount')?.value)||0;
-  if(new Set([r1,r2,r3]).size!==3){showErr('bet-error','Each position must be a different player');return;}
-  if(!amount||amount<=0){showErr('bet-error','Enter a valid amount');return;}
+  if(new Set([r1,r2,r3]).size!==3){showErr('bet-error',tr('err_diff_positions'));return;}
+  if(!amount||amount<=0){showErr('bet-error',tr('err_valid_amount'));return;}
   const btn=document.querySelector('#bet-modal .btn-gold:last-child');
-  if(btn){btn.disabled=true;btn.textContent='Placing...';}
+  if(btn){btn.disabled=true;btn.textContent=tr('placing');}
   try{
     const p=getPlayer(S.currentUser);
-    if(!p?.id){showErr('bet-error','Player not found');if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;}
+    if(!p?.id){showErr('bet-error',tr('err_player_not_found'));if(btn){btn.disabled=false;btn.textContent=tr('confirm_bet');}return;}
     const liveSnap=await getDoc(doc(_db,'players',p.id));
     const liveBal=liveSnap.exists()?liveSnap.data().balance||0:p.balance||0;
     if(amount>liveBal){
-      showErr('bet-error',`Not enough balance — you have ${fmt(liveBal)} CC`);
-      if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;
+      showErr('bet-error',tr('err_not_enough',{bal:fmt(liveBal)}));
+      if(btn){btn.disabled=false;btn.textContent=tr('confirm_bet');}return;
     }
     const pick=`1:${r1}|2:${r2}|3:${r3}`;
     const batch=writeBatch(_db);
@@ -1277,8 +1350,8 @@ async function submitRankedBet(matchId){
     _postDiscord('🏆 **'+S.currentUser+'** bet **'+fmt(amount)+' CC** on ranking: '+rankPicks+' ('+matchId+')');
     closeModal('bet-modal');
   }catch(e){
-    showErr('bet-error','Error placing bet: '+e.message);
-    if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}
+    showErr('bet-error',tr('err_placing')+': '+e.message);
+    if(btn){btn.disabled=false;btn.textContent=tr('confirm_bet');}
   }
 }
 
@@ -1299,8 +1372,8 @@ function openBetModal(matchId){
   }
   const priorBets=S.bets.filter(b=>b.matchId===matchId&&norm(b.playerName)===user&&b.result!=='voided');
   const priorHtml=priorBets.length
-    ?`<div class="alert alert-gold" style="margin-bottom:12px;font-size:12px"><strong>Your existing bets:</strong><br>${priorBets.map(b=>`${fmt(b.amount)} on ${b.pick}${b.result===null?' (pending)':''}`).join('<br>')}</div>`:'';
-  const competitorNote=(isP1||isP2)?`<div class="alert alert-info" style="margin-bottom:12px;font-size:12px">You are competing in this match. You may only bet on yourself.</div>`:'';
+    ?`<div class="alert alert-gold" style="margin-bottom:12px;font-size:12px"><strong>${tr('your_existing_bets')}</strong><br>${priorBets.map(b=>`${tr('amt_on_pick',{amt:fmt(b.amount),pick:b.pick})}${b.result===null?' ('+tr('pending_lc')+')':''}`).join('<br>')}</div>`:'';
+  const competitorNote=(isP1||isP2)?`<div class="alert alert-info" style="margin-bottom:12px;font-size:12px">${tr('competing_note')}</div>`:'';
   const {odds:initOdds,p1pot:ip1,p2pot:ip2,totalPot:itotal,p1pct:ip1pct}=calcOdds(matchId,m.p1,0);
   const ip2pct=100-ip1pct;
   document.getElementById('bet-modal-content').innerHTML=`
@@ -1310,7 +1383,7 @@ function openBetModal(matchId){
       <div style="text-align:center;flex:1"><div class="match-player-name">${m.p2}</div></div>
     </div>
     <div style="margin-bottom:14px;background:var(--bg3);border-radius:var(--radius-sm);padding:10px 12px">
-      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Current crowd odds</div>
+      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">${tr('current_crowd_odds')}</div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
         <span style="color:var(--gold);font-size:12px;font-weight:500">${m.p1}</span>
         <span style="color:var(--blue);font-size:12px;font-weight:500">${m.p2}</span>
@@ -1325,16 +1398,16 @@ function openBetModal(matchId){
       </div>
     </div>
     ${competitorNote}${priorHtml}
-    <div class="fg"><label class="lbl">Pick winner</label><select id="bet-pick" onchange="_updateOddsPreview('${matchId}')">${pickOpts}</select></div>
-    <div class="fg"><label class="lbl">Amount — balance: ${fmt(spendable)} CC</label>
-      <input type="number" id="bet-amount" min="1" max="${Math.max(spendable,0)}" placeholder="Amount..." oninput="_updateOddsPreview('${matchId}')" /></div>
+    <div class="fg"><label class="lbl">${tr('pick_winner')}</label><select id="bet-pick" onchange="_updateOddsPreview('${matchId}')">${pickOpts}</select></div>
+    <div class="fg"><label class="lbl">${tr('amount_balance',{bal:fmt(spendable)})}</label>
+      <input type="number" id="bet-amount" min="1" max="${Math.max(spendable,0)}" placeholder="${tr('amount_ph')}" oninput="_updateOddsPreview('${matchId}')" /></div>
     <div id="odds-preview" style="background:var(--bg3);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px;font-size:13px">
-      <div style="color:var(--text-dim);font-size:12px">Enter an amount to preview your payout ↑</div>
+      <div style="color:var(--text-dim);font-size:12px">${tr('enter_amount_preview')}</div>
     </div>
     <div id="bet-error" class="alert alert-danger hidden"></div>
     <div class="btn-row">
-      <button class="btn" style="flex:1" onclick="closeModal('bet-modal')">Cancel</button>
-      <button class="btn btn-gold" style="flex:1" onclick="submitBet('${matchId}')">Confirm Bet</button>
+      <button class="btn" style="flex:1" onclick="closeModal('bet-modal')">${tr('cancel')}</button>
+      <button class="btn btn-gold" style="flex:1" onclick="submitBet('${matchId}')">${tr('confirm_bet')}</button>
     </div>`;
   document.getElementById('bet-modal').classList.remove('hidden');
 }
@@ -1354,7 +1427,7 @@ function _updateOddsPreview(matchId){
   const prev=document.getElementById('odds-preview');if(!prev)return;
   if(!amount||amount<=0){
     const curOdds=calcOdds(matchId,pick,0);
-    prev.innerHTML=`<div style="color:var(--text-dim);font-size:12px">Current odds for <strong style="color:var(--text)">${pick}</strong>: <strong style="color:var(--gold)">${oddsLabel(curOdds.odds)}</strong></div>`;
+    prev.innerHTML=`<div style="color:var(--text-dim);font-size:12px">${tr('current_odds_for',{pick:'<strong style="color:var(--text)">'+pick+'</strong>'})}: <strong style="color:var(--gold)">${oddsLabel(curOdds.odds)}</strong></div>`;
     return;
   }
   const payout=Math.round(amount*odds);
@@ -1363,12 +1436,12 @@ function _updateOddsPreview(matchId){
   prev.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
-        <div style="font-size:12px;color:var(--text-dim)">If <strong style="color:var(--text)">${pick}</strong> wins</div>
-        <div style="font-size:11px;color:var(--text-dim);margin-top:1px">Odds: <strong style="color:var(--gold)">${oddsLabel(odds)}</strong>${isMin?' (floor — popular pick)':''}</div>
+        <div style="font-size:12px;color:var(--text-dim)">${tr('if_wins',{pick:'<strong style="color:var(--text)">'+pick+'</strong>'})}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:1px">${tr('odds')}: <strong style="color:var(--gold)">${oddsLabel(odds)}</strong>${isMin?' ('+tr('floor_popular')+')':''}</div>
       </div>
       <div style="text-align:right">
         <div style="font-family:'Cinzel',serif;font-size:18px;color:var(--green)">+${fmt(profit)} CC</div>
-        <div style="font-size:11px;color:var(--text-dim)">receive ${fmt(payout)} total</div>
+        <div style="font-size:11px;color:var(--text-dim)">${tr('receive_total',{n:fmt(payout)})}</div>
       </div>
     </div>`;
 }
@@ -1378,16 +1451,16 @@ async function submitBet(matchId){
   const amount=parseInt(document.getElementById('bet-amount').value);
   const p_check=getPlayer(S.currentUser);
   const curBal=(p_check?.balance)||0;
-  if(!amount||amount<=0){showErr('bet-error','Enter a valid amount');return;}
+  if(!amount||amount<=0){showErr('bet-error',tr('err_valid_amount'));return;}
   if(amount>curBal){showErr('bet-error',`Not enough balance (have ${fmt(curBal)} CC)`);return;}
   const m=S.matches.find(x=>x.id===matchId);
   if(m){
     const user=norm(S.currentUser);
-    if(user===norm(m.p1)&&norm(pick)===norm(m.p2)){showErr('bet-error','You cannot bet on your opponent');return;}
-    if(user===norm(m.p2)&&norm(pick)===norm(m.p1)){showErr('bet-error','You cannot bet on your opponent');return;}
+    if(user===norm(m.p1)&&norm(pick)===norm(m.p2)){showErr('bet-error',tr('err_opponent'));return;}
+    if(user===norm(m.p2)&&norm(pick)===norm(m.p1)){showErr('bet-error',tr('err_opponent'));return;}
   }
   const btn=document.querySelector('#bet-modal .btn-gold:last-child');
-  if(btn){btn.disabled=true;btn.textContent='Placing...';}
+  if(btn){btn.disabled=true;btn.textContent=tr('placing');}
   await _fsSet('bets',_newBetId(),{matchId,playerName:S.currentUser,pick,amount,result:null});
   closeModal('bet-modal');
 }
@@ -1405,48 +1478,48 @@ function renderPlayerBank(){
   if(!S.loanOpen){
     el.innerHTML=`<div class="card">
       <div style="font-size:20px;margin-bottom:8px">🏦</div>
-      <div style="font-weight:500;margin-bottom:6px">Cat Bank</div>
-      <div class="alert alert-info">The bank is currently closed. Check back when it opens!</div>
+      <div style="font-weight:500;margin-bottom:6px">${tr('cat_bank')}</div>
+      <div class="alert alert-info">${tr('bank_closed')}</div>
     </div>`;
     return;
   }
   if(maxDebt===0){
     el.innerHTML=`<div class="card">
       <div style="font-size:20px;margin-bottom:8px">🏦</div>
-      <div style="font-weight:500;margin-bottom:6px">Cat Bank</div>
-      <div class="alert alert-info">No borrowing rounds have been configured yet by admin.</div>
+      <div style="font-weight:500;margin-bottom:6px">${tr('cat_bank')}</div>
+      <div class="alert alert-info">${tr('bank_no_rounds')}</div>
     </div>`;
     return;
   }
   el.innerHTML=`<div class="card">
     <div style="font-size:20px;margin-bottom:4px">🏦</div>
-    <div style="font-weight:500;margin-bottom:4px">Cat Bank — Loans</div>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">Borrowing increases your balance but not your net worth. Debt is deducted from wealth ranking.</div>
+    <div style="font-weight:500;margin-bottom:4px">${tr('cat_bank_loans')}</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px">${tr('bank_explain')}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
       <div style="background:var(--bg3);border-radius:var(--radius-sm);padding:10px;text-align:center">
-        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Total Owed</div>
+        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${tr('total_owed')}</div>
         <div style="font-family:'Cinzel',serif;font-size:18px;color:${debt>0?'var(--red)':'var(--text-dim)'}">${debt>0?'−'+fmt(debt):'—'}</div>
-        <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${loanPrincipal>0?'principal '+fmt(loanPrincipal)+' + '+fmtRate(p)+' interest':''}</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${loanPrincipal>0?tr('principal_plus_interest',{p:fmt(loanPrincipal),r:fmtRate(p)}):''}</div>
       </div>
       <div style="background:var(--bg3);border-radius:var(--radius-sm);padding:10px;text-align:center">
-        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Cap Used</div>
+        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${tr('cap_used')}</div>
         <div style="font-family:'Cinzel',serif;font-size:18px;color:var(--text-dim)">${fmt(loanPrincipal)} / ${fmt(maxDebt)}</div>
       </div>
       <div style="background:var(--bg3);border-radius:var(--radius-sm);padding:10px;text-align:center">
-        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Can Borrow</div>
+        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${tr('can_borrow')}</div>
         <div style="font-family:'Cinzel',serif;font-size:18px;color:${canBorrow>0?'var(--green)':'var(--red)'}">${fmt(canBorrow)} CC</div>
       </div>
     </div>
     ${canBorrow>0?`
-    <div class="fg"><label class="lbl">Amount to borrow (max ${fmt(canBorrow)} CC)</label>
-      <input type="number" id="loan-amount" min="1" max="${canBorrow}" placeholder="Amount..." />
+    <div class="fg"><label class="lbl">${tr('amount_to_borrow',{max:fmt(canBorrow)})}</label>
+      <input type="number" id="loan-amount" min="1" max="${canBorrow}" placeholder="${tr('amount_ph')}" />
     </div>
     <div class="alert alert-gold" style="margin-bottom:12px;font-size:12px">
-      Loan increases your <strong>balance</strong>. Your net worth decreases by the <strong>${fmtRate(p)}</strong> interest owed.${p?.status==='sponsor'?' <span style="color:var(--green)">✦ Sponsor rate</span>':''}
+      ${tr('loan_explain',{rate:'<strong>'+fmtRate(p)+'</strong>'})}${p?.status==='sponsor'?' <span style="color:var(--green)">✦ Sponsor rate</span>':''}
     </div>
     <div id="loan-error" class="alert alert-danger hidden"></div>
-    <button class="btn btn-gold btn-full" onclick="takeLoan()">Take Loan</button>`
-    :`<div class="alert alert-danger">You have reached the borrowing cap of ${fmt(maxDebt)} CC.</div>`}
+    <button class="btn btn-gold btn-full" onclick="takeLoan()">${tr('take_loan')}</button>`
+    :`<div class="alert alert-danger">${tr('bank_cap_reached',{max:fmt(maxDebt)})}</div>`}
   </div>`;
 }
 
@@ -1456,8 +1529,8 @@ async function takeLoan(){
   const amount=parseInt(document.getElementById('loan-amount')?.value)||0;
   const loanPrincipal=p.loanPrincipal||0;
   const canBorrow=Math.max(0,(S.maxDebt||0)-loanPrincipal);
-  if(!amount||amount<=0){showErr('loan-error','Enter a valid amount');return;}
-  if(amount>canBorrow){showErr('loan-error',`Max borrowable is ${fmt(canBorrow)} CC`);return;}
+  if(!amount||amount<=0){showErr('loan-error',tr('err_valid_amount'));return;}
+  if(amount>canBorrow){showErr('loan-error',tr('err_max_borrow',{max:fmt(canBorrow)}));return;}
   // Loan: balance += principal (more to spend)
   // loanPrincipal += principal (tracks cap usage)
   // debt += principal * (1 + interest rate) for full repayment
@@ -1483,7 +1556,7 @@ async function takeLoan(){
 
 // ── LIVE BETS VIEW ────────────────────────────
 const _openBetLists=new Set();
-function _toggleBets(colId,total){var d=document.getElementById(colId);var b=document.getElementById('btn-'+colId);if(!d||!b)return;var open=d.style.display!=='none';if(open)_openBetLists.delete(colId);else _openBetLists.add(colId);d.style.display=open?'none':'';b.innerHTML=open?'▼ '+total+' bet'+(total!==1?'s':''):'▲ Hide bets';}
+function _toggleBets(colId,total){var d=document.getElementById(colId);var b=document.getElementById('btn-'+colId);if(!d||!b)return;var open=d.style.display!=='none';if(open)_openBetLists.delete(colId);else _openBetLists.add(colId);d.style.display=open?'none':'';b.innerHTML=open?'▼ '+nBets(total):'▲ '+tr('hide_bets');}
 
 function renderLiveBets(containerId){
   const el=document.getElementById(containerId);
@@ -1511,21 +1584,21 @@ function renderLiveBets(containerId){
   let html=`
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
       <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;text-align:center">
-        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Active bets</div>
+        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${tr('active_bets')}</div>
         <div style="font-family:'Cinzel',serif;font-size:22px;color:var(--gold)">${totalActiveBets}</div>
       </div>
       <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;text-align:center">
-        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">CC in active bets</div>
+        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${tr('cc_in_active_bets')}</div>
         <div style="font-family:'Cinzel',serif;font-size:22px;color:var(--gold)">${fmt(totalPot)}</div>
       </div>
       <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;text-align:center">
-        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Matches</div>
+        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${tr('matches')}</div>
         <div style="font-family:'Cinzel',serif;font-size:22px;color:var(--gold)">${S.matches.length}</div>
       </div>
     </div>`;
 
   if(sorted.length===0){
-    html+='<div class="alert alert-info">No matches yet.</div>';
+    html+='<div class="alert alert-info">'+tr('no_matches_yet')+'</div>';
     el.innerHTML=html; return;
   }
 
@@ -1533,7 +1606,7 @@ function renderLiveBets(containerId){
   sorted.forEach(m=>{const cat=m.roundLabel||m.round||'General';if(!_lbMap[cat]){_lbMap[cat]=[];_lbCats.push(cat);}_lbMap[cat].push(m);});
   _lbCats.forEach(cat=>{
     const cms=_lbMap[cat];const done=cms.every(m=>m.status==='done');const k='lb-'+cat;const cl=_collapsedCats.has(k);
-    html+=`<button onclick="_tcLB('${k}','${containerId}')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;margin-bottom:8px;font-family:inherit"><div style="display:flex;align-items:center;gap:6px"><span style="font-family:'Cinzel',serif;font-size:12px;color:var(--gold)">${cat}</span>${done?'<span class=\"badge badge-done\" style=\"font-size:10px;padding:1px 6px\">All done</span>':''}</div><span style="color:var(--text-dim);font-size:11px">${cl?'▶':'▼'}</span></button>`;
+    html+=`<button onclick="_tcLB('${k}','${containerId}')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;margin-bottom:8px;font-family:inherit"><div style="display:flex;align-items:center;gap:6px"><span style="font-family:'Cinzel',serif;font-size:12px;color:var(--gold)">${cat}</span>${done?'<span class=\"badge badge-done\" style=\"font-size:10px;padding:1px 6px\">'+tr('all_done')+'</span>':''}</div><span style="color:var(--text-dim);font-size:11px">${cl?'▶':'▼'}</span></button>`;
     if(!cl){html+='<div class="livebets-match-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';cms.forEach(m=>{
     const bets=(matchMap[m.id]?.bets||[]);
     const activeBets=bets.filter(b=>b.result===null);
@@ -1541,7 +1614,7 @@ function renderLiveBets(containerId){
     const isSurv=isExactSet(m);
     const isMulti=isMultiPick(m);
     const fmt_lb=getFormat(m);
-    const formatLabel=fmt_lb?.name||(isRanked?'Exact Ranking':m.matchType==='survivors'?'Top 3 Survivors':null);
+    const formatLabel=fmtName(fmt_lb)||(isRanked?'Exact Ranking':m.matchType==='survivors'?'Top 3 Survivors':null);
     const contestants=(m.contestants||m.p1||'').split(',').map(s=>s.trim()).filter(Boolean);
 
     // Build pot data
@@ -1557,20 +1630,20 @@ function renderLiveBets(containerId){
       const comboRows=Object.entries(comboCounts).sort((a,b)=>b[1].amount-a[1].amount).map(([combo,data])=>
         `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 6px;border-bottom:0.5px solid rgba(201,168,76,.06)">
           <span style="font-size:11px;color:var(--text)">${combo}</span>
-          <span style="font-size:11px;color:var(--gold);flex-shrink:0;margin-left:8px">${fmt(data.amount)} CC · ${data.count} bet${data.count!==1?'s':''}</span>
+          <span style="font-size:11px;color:var(--gold);flex-shrink:0;margin-left:8px">${fmt(data.amount)} CC · ${nBets(data.count)}</span>
         </div>`).join('');
       potHtml=`<div style="margin-bottom:10px">
-        <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">Total staked: <strong style="color:var(--gold)">${fmt(totalSurv)} CC</strong> · ${bets.length} bet${bets.length!==1?'s':''}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">${tr('total_staked')}: <strong style="color:var(--gold)">${fmt(totalSurv)} CC</strong> · ${nBets(bets.length)}</div>
         ${comboRows?`<div style="background:var(--bg3);border-radius:var(--radius-sm);padding:4px 6px;max-height:180px;overflow-y:auto">${comboRows}</div>`:''}
       </div>`;
     } else if(isRanked){
       const totalRanked=bets.reduce((s,b)=>s+b.amount,0);
       const lbRankFormat=(S.bettingFormats||[]).find(f=>f.id==='exact-ranking');
       const lbRankInfo=lbRankFormat?.payoutType==='tiered'&&lbRankFormat.tiers?.length
-        ?lbRankFormat.tiers.map(t=>`${t.correct} correct → ${t.mult}×`).join(' · ')
-        :`All 3 exact → ${lbRankFormat?.fixedMult||10}×`;
+        ?lbRankFormat.tiers.map(t=>`${t.correct} ${tr('correct')} → ${t.mult}×`).join(' · ')
+        :`${tr('all3_exact')} → ${lbRankFormat?.fixedMult||10}×`;
       potHtml=`<div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">
-        Total staked: <strong style="color:var(--gold)">${fmt(totalRanked)} CC</strong> across ${bets.length} bet(s) · ${lbRankInfo}
+        ${tr('total_staked')}: <strong style="color:var(--gold)">${fmt(totalRanked)} CC</strong> · ${nBets(bets.length)} · ${lbRankInfo}
       </div>`;
     } else {
       const p1pot=bets.filter(b=>norm(b.pick)===norm(m.p1)).reduce((s,b)=>s+b.amount,0);
@@ -1601,7 +1674,7 @@ function renderLiveBets(containerId){
     const colId='bets-'+m.id;
     let betRows='';
     if(bets.length===0){
-      betRows='<div style="color:var(--text-dim);font-size:12px;padding:6px 0">No bets yet.</div>';
+      betRows='<div style="color:var(--text-dim);font-size:12px;padding:6px 0">'+tr('no_bets_yet')+'</div>';
     } else {
       const sorted2=[...bets].sort((a,b)=>{
         if((a.result===null)!==(b.result===null)) return a.result===null?-1:1;
@@ -1623,16 +1696,16 @@ function renderLiveBets(containerId){
           :b.betType==='survivors'?Math.round(b.amount*(b.settledOdds||1))-b.amount
           :Math.round(b.amount*(b.settledOdds||S.betMult||2))-b.amount;
         const resultTag=b.result===null
-          ?`<span style="font-size:10px;background:${betBg};color:${betColor};border:0.5px solid ${betBorder};border-radius:3px;padding:1px 5px">PENDING</span>`
+          ?`<span style="font-size:10px;background:${betBg};color:${betColor};border:0.5px solid ${betBorder};border-radius:3px;padding:1px 5px">${tr('pending').toUpperCase()}</span>`
           :b.result==='won'
-          ?`<span style="font-size:10px;background:var(--green-bg);color:var(--green);border:0.5px solid rgba(74,156,110,.3);border-radius:3px;padding:1px 5px">WON +${fmt(wonAmt)}</span>`
+          ?`<span style="font-size:10px;background:var(--green-bg);color:var(--green);border:0.5px solid rgba(74,156,110,.3);border-radius:3px;padding:1px 5px">${tr('won').toUpperCase()} +${fmt(wonAmt)}</span>`
           :b.result==='lost'
-          ?`<span style="font-size:10px;background:var(--red-bg);color:var(--red);border:0.5px solid rgba(192,64,64,.3);border-radius:3px;padding:1px 5px">LOST</span>`
+          ?`<span style="font-size:10px;background:var(--red-bg);color:var(--red);border:0.5px solid rgba(192,64,64,.3);border-radius:3px;padding:1px 5px">${tr('lost').toUpperCase()}</span>`
           :`<span style="font-size:10px;background:var(--bg3);color:var(--text-dim);border:0.5px solid var(--border);border-radius:3px;padding:1px 5px">${b.result?.toUpperCase()||'—'}</span>`;
         return `<div style="display:flex;align-items:flex-start;gap:7px;padding:5px 6px;background:${betBg};border:0.5px solid ${betBorder};border-radius:5px">
           <div class="avatar" style="${avStyle(b.playerName)};width:22px;height:22px;font-size:9px;flex-shrink:0;border-color:${betColor};margin-top:2px">${initials(b.playerName)}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:12px;font-weight:${isMe?'600':'400'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)">${b.playerName}${isMe?' <span style="font-size:9px;color:var(--text-dim)">(you)</span>':''}</div>
+            <div style="font-size:12px;font-weight:${isMe?'600':'400'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)">${b.playerName}${isMe?' <span style="font-size:9px;color:var(--text-dim)">('+tr('you')+')</span>':''}</div>
             <div style="font-size:10px;color:${betColor};overflow:hidden;text-overflow:ellipsis;${isSurv?'white-space:normal;line-height:1.4':'white-space:nowrap'}">${pickDisplay}</div>
           </div>
           <div style="text-align:right;flex-shrink:0">
@@ -1647,10 +1720,10 @@ function renderLiveBets(containerId){
     }
 
     const statusBadge=m.status==='done'
-      ?`<span class="badge badge-done">Finished</span>`
+      ?`<span class="badge badge-done">${tr('finished')}</span>`
       :m.bettingOpen
-      ?`<span class="badge badge-open" style="animation:pulse 2s infinite">🔴 Live</span>`
-      :`<span class="badge badge-closed">Closed</span>`;
+      ?`<span class="badge badge-open" style="animation:pulse 2s infinite">${tr('live')}</span>`
+      :`<span class="badge badge-closed">${tr('closed')}</span>`;
 
     const matchTitle=isMulti
       ?`<div style="font-size:13px;font-family:'Cinzel',serif;color:var(--gold);margin-bottom:4px">${m.id}${formatLabel?' — '+formatLabel:''}</div>
@@ -1671,8 +1744,8 @@ function renderLiveBets(containerId){
       </div>
       ${potHtml}
       ${bets.length>0
-        ?`<button id="btn-${colId}" onclick="_toggleBets('${colId}',${bets.length})" style="width:100%;margin-top:4px;padding:4px 8px;font-size:11px;color:var(--text-dim);background:var(--bg3);border:0.5px solid var(--border);border-radius:4px;cursor:pointer;font-family:inherit;text-align:left">${_openBetLists.has(colId)?'▲ Hide bets':'▼ '+bets.length+' bet'+(bets.length!==1?'s':'')}</button>`
-        :'<div style="font-size:11px;color:var(--text-dim);margin-top:4px">No bets yet</div>'}
+        ?`<button id="btn-${colId}" onclick="_toggleBets('${colId}',${bets.length})" style="width:100%;margin-top:4px;padding:4px 8px;font-size:11px;color:var(--text-dim);background:var(--bg3);border:0.5px solid var(--border);border-radius:4px;cursor:pointer;font-family:inherit;text-align:left">${_openBetLists.has(colId)?'▲ '+tr('hide_bets'):'▼ '+nBets(bets.length)}</button>`
+        :'<div style="font-size:11px;color:var(--text-dim);margin-top:4px">'+tr('no_bets_yet')+'</div>'}
       ${betRows}
     </div>`;
   });
@@ -1690,7 +1763,7 @@ function renderAMatches(){
   S.matches.forEach(m=>{const cat=m.roundLabel||m.round||'General';if(!_amMap[cat]){_amMap[cat]=[];_amCats.push(cat);}_amMap[cat].push(m);});
   _amCats.forEach(cat=>{
     const cms=_amMap[cat];const done=cms.every(m=>m.status==='done');const k='a-'+cat;const cl=_collapsedCats.has(k);
-    html+=`<button onclick="_tcA('${k}')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg3);border:0.5px solid ${done?'rgba(74,127,192,.35)':'var(--border)'};border-radius:var(--radius-sm);cursor:pointer;margin-bottom:8px;font-family:inherit"><div style="display:flex;align-items:center;gap:8px"><span style="font-family:'Cinzel',serif;font-size:13px;color:var(--gold)">${cat}</span><span style="font-size:11px;color:var(--text-dim)">${cms.length} match${cms.length!==1?'es':''}</span>${done?'<span class=\"badge badge-done\" style=\"font-size:10px;padding:1px 6px\">All done</span>':''}</div><span style="color:var(--text-dim);font-size:11px">${cl?'▶ Show':'▼ Hide'}</span></button>`;
+    html+=`<button onclick="_tcA('${k}')" style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg3);border:0.5px solid ${done?'rgba(74,127,192,.35)':'var(--border)'};border-radius:var(--radius-sm);cursor:pointer;margin-bottom:8px;font-family:inherit"><div style="display:flex;align-items:center;gap:8px"><span style="font-family:'Cinzel',serif;font-size:13px;color:var(--gold)">${cat}</span><span style="font-size:11px;color:var(--text-dim)">${nMatches(cms.length)}</span>${done?'<span class=\"badge badge-done\" style=\"font-size:10px;padding:1px 6px\">'+tr('all_done')+'</span>':''}</div><span style="color:var(--text-dim);font-size:11px">${cl?'▶ Show':'▼ Hide'}</span></button>`;
     if(!cl){cms.forEach(m=>{
     const bc=S.bets.filter(b=>b.matchId===m.id&&b.result!=='voided').length;
     const p1p=S.bets.filter(b=>b.matchId===m.id&&norm(b.pick)===norm(m.p1)&&b.result!=='voided').reduce((s,b)=>s+b.amount,0);
@@ -1701,7 +1774,7 @@ function renderAMatches(){
           <span style="font-size:11px;color:var(--gold)">${m.id}</span>
           ${m.day?`<span style="font-size:11px;color:var(--text-dim)">${m.day}${m.time?' · '+m.time:''}</span>`:''}
         </div>
-        <span class="badge ${m.status==='done'?'badge-done':m.bettingOpen?'badge-open':'badge-closed'}">${m.status==='done'?'Finished':m.bettingOpen?'Betting open':'Betting closed'}</span>
+        <span class="badge ${m.status==='done'?'badge-done':m.bettingOpen?'badge-open':'badge-closed'}">${m.status==='done'?tr('finished'):m.bettingOpen?tr('betting_open'):tr('betting_closed')}</span>
       </div>
       ${(()=>{
         const fmt_=getFormat(m);
@@ -1767,9 +1840,9 @@ function openRankedResultModal(matchId){
     </div>`;
   } else {
     formHtml=`
-      <div class="fg"><label class="lbl">🥇 1st place</label><select id="res-1">${opts}</select></div>
-      <div class="fg"><label class="lbl">🥈 2nd place</label><select id="res-2">${opts}</select></div>
-      <div class="fg"><label class="lbl">🥉 3rd place</label><select id="res-3">${opts}</select></div>`;
+      <div class="fg"><label class="lbl">🥇 ${tr('place_1')}</label><select id="res-1">${opts}</select></div>
+      <div class="fg"><label class="lbl">🥈 ${tr('place_2')}</label><select id="res-2">${opts}</select></div>
+      <div class="fg"><label class="lbl">🥉 ${tr('place_3')}</label><select id="res-3">${opts}</select></div>`;
   }
 
   document.getElementById('add-match-content').innerHTML=`
@@ -3150,28 +3223,28 @@ async function _postDiscord(msg){
 
 // ── BET PLACEMENT ──
 async function submitBetWithDeduct(matchId){
-  if(!S.siteOpen){showErr('bet-error','The site is currently closed.');return;}
+  if(!S.siteOpen){showErr('bet-error',tr('err_site_closed'));return;}
   const m=S.matches.find(x=>x.id===matchId);
-  if(!m?.bettingOpen){showErr('bet-error','Betting is closed for this match.');return;}
+  if(!m?.bettingOpen){showErr('bet-error',tr('err_betting_closed'));return;}
   const pick=document.getElementById('bet-pick').value;
   const amount=parseInt(document.getElementById('bet-amount').value);
-  if(!amount||amount<=0){showErr('bet-error','Enter a valid amount');return;}
+  if(!amount||amount<=0){showErr('bet-error',tr('err_valid_amount'));return;}
   if(m){
     const user=norm(S.currentUser);
-    if(user===norm(m.p1)&&norm(pick)===norm(m.p2)){showErr('bet-error','You cannot bet on your opponent');return;}
-    if(user===norm(m.p2)&&norm(pick)===norm(m.p1)){showErr('bet-error','You cannot bet on your opponent');return;}
+    if(user===norm(m.p1)&&norm(pick)===norm(m.p2)){showErr('bet-error',tr('err_opponent'));return;}
+    if(user===norm(m.p2)&&norm(pick)===norm(m.p1)){showErr('bet-error',tr('err_opponent'));return;}
   }
   const btn=document.querySelector('#bet-modal .btn-gold:last-child');
-  if(btn){btn.disabled=true;btn.textContent='Placing...';}
+  if(btn){btn.disabled=true;btn.textContent=tr('placing');}
   try{
     const p=getPlayer(S.currentUser);
-    if(!p?.id){showErr('bet-error','Player not found');if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;}
+    if(!p?.id){showErr('bet-error',tr('err_player_not_found'));if(btn){btn.disabled=false;btn.textContent=tr('confirm_bet');}return;}
     // Live read from Firestore to prevent race condition if multiple bets placed quickly
     const liveSnap=await getDoc(doc(_db,'players',p.id));
     const liveBal=liveSnap.exists()?liveSnap.data().balance||0:p.balance||0;
     if(amount>liveBal){
-      showErr('bet-error',`Not enough balance — you have ${fmt(liveBal)} CC`);
-      if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}return;
+      showErr('bet-error',tr('err_not_enough',{bal:fmt(liveBal)}));
+      if(btn){btn.disabled=false;btn.textContent=tr('confirm_bet');}return;
     }
     const batch=writeBatch(_db);
     const betId=_newBetId();
@@ -3185,8 +3258,8 @@ async function submitBetWithDeduct(matchId){
     }
     closeModal('bet-modal');
   }catch(e){
-    showErr('bet-error','Error placing bet: '+e.message);
-    if(btn){btn.disabled=false;btn.textContent='Confirm Bet';}
+    showErr('bet-error',tr('err_placing')+': '+e.message);
+    if(btn){btn.disabled=false;btn.textContent=tr('confirm_bet');}
   }
 }
 Object.assign(globalThis,{
@@ -3211,12 +3284,14 @@ Object.assign(globalThis,{
   _togglePayoutFields, _addTierRow,
   resetPin, exportData, clearAllBets, forceReloadAllTabs,
   previewJsonRestore, applyJsonRestore,
+  setLang,
 });
 
 // ── BOOT ──────────────────────────────────────
 async function boot(){
   try{
-    document.getElementById('loading-msg').textContent='Loading event data...';
+    _applyStaticI18n();
+    document.getElementById('loading-msg').textContent=tr('loading');
     await initDefault();
     subscribeAll();
     // wait for real data (max 6s) instead of a fixed guess
