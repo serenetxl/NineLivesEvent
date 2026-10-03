@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- NINELIVES v20261003-1 -->
+<!-- NINELIVES v20261003-2 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -311,7 +311,7 @@ const _app = initializeApp({
 const _db = getFirestore(_app);
 
 // Bump this on every upload — open tabs on an older version reload themselves.
-const APP_VERSION='20261003-1';
+const APP_VERSION='20261003-2';
 const ADMIN_PW_DEFAULT = "catwins2024";
 let ADMIN_PW = ADMIN_PW_DEFAULT;
 // BET_MULT removed — use S.betMult (parimutuel floor, set per-event in Admin → Settings)
@@ -1685,7 +1685,7 @@ function renderLiveBets(containerId){
 // ── ADMIN: MATCHES ────────────────────────────
 function renderAMatches(){
   let html=`<div style="margin-bottom:14px"><button class="btn btn-gold btn-sm" onclick="openAddMatchModal()">+ Add Match</button></div>`;
-  if(!S.matches.length){html+='<div class="alert alert-info">No matches yet. Add semifinals matchups above.</div>';}
+  if(!S.matches.length){html+='<div class="alert alert-info">No matches yet. Add your first match above.</div>';}
   const _amCats=[];const _amMap={};
   S.matches.forEach(m=>{const cat=m.roundLabel||m.round||'General';if(!_amMap[cat]){_amMap[cat]=[];_amCats.push(cat);}_amMap[cat].push(m);});
   _amCats.forEach(cat=>{
@@ -1873,7 +1873,7 @@ async function declareWinner(id,winner){
   const loserPot=loserBets.reduce((s,b)=>s+b.amount,0);
   const totalPot=p1pot+loserPot;
   // odds = totalPot / winnerPot, floored at minMult
-  const odds=p1pot>0 ? Math.max(minMult, totalPot/p1pot) : minMult;
+  const odds=Math.round((p1pot>0 ? Math.max(minMult, totalPot/p1pot) : minMult)*100)/100; // rounded once, so payout, display and reopen all use the same number
 
   const delta={};
   matchBets.forEach(b=>{
@@ -2350,7 +2350,7 @@ function renderABank(){
         </div>
         <label class="lbl">Add borrowing round</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <input type="text" id="new-cap-label" placeholder="Label (e.g. Semis)" style="width:140px" />
+          <input type="text" id="new-cap-label" placeholder="Label (e.g. Round 1)" style="width:140px" />
           <input type="number" id="new-cap-amount" placeholder="Amount (CC)" style="width:120px" min="1" />
           <button class="btn btn-sm btn-success" onclick="addDebtCapRound()">+ Add round</button>
         </div>
@@ -2366,7 +2366,7 @@ async function toggleLoanOpen(){
 async function addDebtCapRound(){
   const label=(document.getElementById('new-cap-label')?.value||'').trim();
   const amount=parseInt(document.getElementById('new-cap-amount')?.value)||0;
-  if(!label){alert('Enter a label for this round (e.g. "Semis")');return;}
+  if(!label){alert('Enter a label for this round (e.g. "Round 1")');return;}
   if(amount<=0){alert('Enter a positive CC amount');return;}
   const newHistory=[...(S.debtCapHistory||[]),{label,amount,addedAt:new Date().toISOString()}];
   const newTotal=newHistory.reduce((s,e)=>s+(e.amount||0),0);
@@ -2737,7 +2737,7 @@ function renderASettings(){
       <div class="fg"><label class="lbl">Event name</label>
         <input type="text" id="evt-title" value="${S.eventTitle||''}" placeholder="e.g. Melody Event" /></div>
       <div class="fg"><label class="lbl">Subtitle / Phase</label>
-        <input type="text" id="evt-subtitle" value="${S.eventSubtitle||''}" placeholder="e.g. Semifinals" /></div>
+        <input type="text" id="evt-subtitle" value="${S.eventSubtitle||''}" placeholder="e.g. Round 1" /></div>
       <div class="fg"><label class="lbl">Icon (emoji)</label>
         <input type="text" id="evt-icon" value="${S.eventIcon||'🐱'}" placeholder="🐱" style="max-width:80px" /></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
