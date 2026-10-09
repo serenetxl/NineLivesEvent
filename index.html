@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- NINELIVES v20261009-2 -->
+<!-- NINELIVES v20261009-4 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -305,7 +305,7 @@ tr:hover td{background:rgba(201,168,76,.03)}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import { getFirestore, doc, collection, getDocs, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, query, where } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getFirestore, doc, collection, getDocs, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, writeBatch, query, where, increment } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 const _app = initializeApp({
   apiKey:"AIzaSyB27Beqxzc3LSbNTBLDOo82nEpTfwS7Cko",
@@ -318,7 +318,7 @@ const _app = initializeApp({
 const _db = getFirestore(_app);
 
 // Bump this on every upload — open tabs on an older version reload themselves.
-const APP_VERSION='20261009-2';
+const APP_VERSION='20261009-4';
 const ADMIN_PW_DEFAULT = "catwins2024";
 
 // ── LANGUAGES ──────────────────────────────
@@ -1311,7 +1311,7 @@ async function submitSurvivorsBet(matchId){
     const formatId=m?.formatId||'top3-survivors';
     batch.set(doc(_db,'bets',betId),{matchId,playerName:S.currentUser,pick,pickArray,amount,result:null,betType:'survivors',formatId,stakeInBalance:false});
     const newBal=Math.round(liveBal-amount);
-    batch.set(doc(_db,'players',p.id),{balance:newBal,netWorth:newBal-(p.debt||0)},{merge:true});
+    batch.set(doc(_db,'players',p.id),{balance:increment(-amount),netWorth:increment(-amount)},{merge:true}); // atomic: can't clash with a payout landing at the same moment
     await batch.commit();
     _postDiscord('🎲 **'+S.currentUser+'** bet **'+fmt(amount)+' CC** — '+(fmt_?.name||'Pick')+': '+pickArray.join(', ')+' ('+matchId+')');
     closeModal('bet-modal');
@@ -1347,7 +1347,7 @@ async function submitRankedBet(matchId){
     const betId=_newBetId();
     batch.set(doc(_db,'bets',betId),{matchId,playerName:S.currentUser,pick,amount,result:null,betType:'ranked',stakeInBalance:false});
     const newBal=Math.round(liveBal-amount);
-    batch.set(doc(_db,'players',p.id),{balance:newBal,netWorth:newBal-(p.debt||0)},{merge:true});
+    batch.set(doc(_db,'players',p.id),{balance:increment(-amount),netWorth:increment(-amount)},{merge:true}); // atomic: can't clash with a payout landing at the same moment
     await batch.commit();
     const rankPicks=pick.split('|').map(part=>{const[pos,name]=part.split(':');const medals=['','🥇','🥈','🥉'];return (medals[parseInt(pos)]||pos+':')+' '+name;}).join(' · ');
     _postDiscord('🏆 **'+S.currentUser+'** bet **'+fmt(amount)+' CC** on ranking: '+rankPicks+' ('+matchId+')');
@@ -1545,11 +1545,11 @@ async function takeLoan(){
   const newDebt          = newLoanPrincipal + newInterestOwed;
   const newNetWorth      = newBalance - newDebt;
   await _fsUpd('players',p.id,{
-    balance:       newBalance,
+    balance:       increment(amount),
     loanPrincipal: newLoanPrincipal,
     interestOwed:  newInterestOwed,
     debt:          newDebt,
-    netWorth:      newNetWorth,
+    netWorth:      increment(amount-(newDebt-(p.debt||0))),
   });
   _postDiscord('🏦 **'+n+'** took a loan of **'+fmt(amount)+' CC** from Cat Bank (total principal: '+fmt(newLoanPrincipal)+' CC · total debt incl. interest: '+fmt(newDebt)+' CC)');
   renderPlayerBank();
@@ -1888,7 +1888,7 @@ async function setRoundBetting(ci,open){
 }
 
 function _autoPrefix(label){
-  const p=(label||'').split(/\s+/).filter(Boolean).map(w=>/^\d+$/.test(w)?w:w[0]).join('').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const p=(label||'').split(/[\s\-–_]+/).filter(Boolean).map(w=>/^\d+$/.test(w)?w:w[0]).join('').toUpperCase().replace(/[^A-Z0-9]/g,'');
   return p||'R';
 }
 function _nrLabelInput(){
@@ -2106,7 +2106,7 @@ async function declareRankedResult(id){
   const selections=fmt_?.selections||3;
   const batch=writeBatch(_db);
   let resultStr='';
-  const _run={}; // running balance per player, so two winning bets both get paid
+  const _run={}; // total payout per player (paid once, atomically)
 
   if(isSet_){
     const picked=Array.from(document.querySelectorAll('[id^="surv-res-"]:checked')).map(c=>c.value);
@@ -2128,8 +2128,7 @@ async function declareRankedResult(id){
         const p=getPlayer(b.playerName);
         if(p?.id){
           const payout=Math.round(b.amount*payoutMult);
-          const newBal=Math.round((_run[p.id]??(p.balance||0))+payout);_run[p.id]=newBal;
-          batch.update(doc(_db,'players',p.id),{balance:newBal,netWorth:newBal-(p.debt||0)});
+          _run[p.id]=(_run[p.id]||0)+Math.round(b.amount*payoutMult);
         }
       }
     });
@@ -2154,13 +2153,13 @@ async function declareRankedResult(id){
       if(mult>0){
         const p=getPlayer(b.playerName);
         if(p?.id){
-          const rBal=Math.round((_run[p.id]??(p.balance||0))+b.amount*mult);_run[p.id]=rBal;
-          batch.update(doc(_db,'players',p.id),{balance:rBal,netWorth:rBal-(p.debt||0)});
+          _run[p.id]=(_run[p.id]||0)+Math.round(b.amount*mult);
         }
       }
     });
   }
 
+  for(const pid in _run) batch.update(doc(_db,'players',pid),{balance:increment(_run[pid]),netWorth:increment(_run[pid])});
   batch.update(doc(_db,'matches',id),{winner:resultStr,status:'done',bettingOpen:false});
   await batch.commit();
   closeModal('add-match-modal');
@@ -2196,7 +2195,7 @@ async function declareWinner(id,winner){
       if(p&&p.id){
         const newBal=Math.round((p.balance||0)+d.net);
         const newNW=newBal-(p.debt||0);
-        batch.update(doc(_db,'players',p.id),{balance:newBal,netWorth:newNW});
+        batch.update(doc(_db,'players',p.id),{balance:increment(d.net),netWorth:increment(d.net)});
       }
     }
   }
@@ -2221,7 +2220,7 @@ async function declareWalkover(id){
     if(p&&p.id){
       const newBal=Math.round((p.balance||0)+r.amount);
       const newNW=newBal-(p.debt||0);
-      batch.update(doc(_db,'players',p.id),{balance:newBal,netWorth:newNW});
+      batch.update(doc(_db,'players',p.id),{balance:increment(r.amount),netWorth:increment(r.amount)});
     }
   }
   batch.update(doc(_db,'matches',id),{status:'done',bettingOpen:false,winner:'Walkover'});
@@ -2253,8 +2252,8 @@ async function reopenMatch(id){
     if(r.delta!==0){
       const p=getPlayer(r.name);if(!p?.id)continue;
       batch.update(doc(_db,'players',p.id),{
-        balance:  Math.round((p.balance||0)+r.delta),
-        netWorth: Math.round((p.balance||0)+r.delta)-(p.debt||0),
+        balance:  increment(Math.round(r.delta)),
+        netWorth: increment(Math.round(r.delta)),
       });
     }
   }
@@ -2848,8 +2847,8 @@ async function voidBet(betId){
     if(p?.id){
       const voidBal=Math.round((p.balance||0)+bet.amount);
       batch.update(doc(_db,'players',p.id),{
-        balance:  voidBal,
-        netWorth: voidBal-(p.debt||0),
+        balance:  increment(bet.amount),
+        netWorth: increment(bet.amount),
       });
     }
   }
@@ -3492,7 +3491,7 @@ async function submitBetWithDeduct(matchId){
     const betId=_newBetId();
     batch.set(doc(_db,'bets',betId),{matchId,playerName:S.currentUser,pick,amount,result:null,stakeInBalance:false});
     const newBal=Math.round(liveBal-amount);
-    batch.set(doc(_db,'players',p.id),{balance:newBal,netWorth:newBal-(p.debt||0)},{merge:true});
+    batch.set(doc(_db,'players',p.id),{balance:increment(-amount),netWorth:increment(-amount)},{merge:true}); // atomic: can't clash with a payout landing at the same moment
     await batch.commit();
     if(m){
       const emoji=norm(pick)===norm(m.p1)?'🟡':'🔵';
