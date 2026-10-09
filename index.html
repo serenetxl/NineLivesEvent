@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- NINELIVES v20261009-1 -->
+<!-- NINELIVES v20261009-2 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -318,7 +318,7 @@ const _app = initializeApp({
 const _db = getFirestore(_app);
 
 // Bump this on every upload — open tabs on an older version reload themselves.
-const APP_VERSION='20261009-1';
+const APP_VERSION='20261009-2';
 const ADMIN_PW_DEFAULT = "catwins2024";
 
 // ── LANGUAGES ──────────────────────────────
@@ -1984,15 +1984,28 @@ async function submitAddRound(){
   }
 }
 
-// Bracket app link — expects GET {tournamentUrl}/api/public/pairings returning
-// { rounds:[ { key, label, bestOf, matches:[ { id, p1, p2, winner } ] } ] }
+// Bracket app link — reads the bracket app's existing public API:
+//   GET {bracket origin}/api/tournament/{current|id}/matches
+// (the bracket worker already allows https://serenetxl.github.io to read it)
+// and turns it into rounds: [{ key, label, bestOf?, matches:[{ id, p1, p2, winner }] }]
 async function _fetchBracket(){
   if(!S.tournamentUrl) throw new Error('No tournament bracket link set (Admin → Settings).');
-  const r=await fetch(S.tournamentUrl.replace(/\/+$/,'')+'/api/public/pairings',{cache:'no-store'});
+  let origin, tid='current';
+  try{const u=new URL(S.tournamentUrl);origin=u.origin;const t=u.searchParams.get('t');if(t&&/^\d+$/.test(t))tid=t;}
+  catch(e){throw new Error('the tournament bracket link in Settings is not a valid web address');}
+  const r=await fetch(origin+'/api/tournament/'+tid+'/matches',{cache:'no-store'});
+  if(r.status===404) throw new Error('no tournament found on the bracket site');
   if(!r.ok) throw new Error('bracket app answered '+r.status);
   const d=await r.json();
-  if(!d||!Array.isArray(d.rounds)) throw new Error('unexpected reply from bracket app');
-  return d;
+  if(!d||!Array.isArray(d.matches)) throw new Error('unexpected reply from bracket app');
+  const rounds=[],byKey={};
+  d.matches.forEach(m=>{
+    const st=m.stage==='swiss'?'s':'k';
+    const key=st+m.round;
+    if(!byKey[key]){byKey[key]={key,label:m.roundName||((m.stage==='swiss'?'Swiss round ':'Round ')+m.round),matches:[]};rounds.push(byKey[key]);}
+    byKey[key].matches.push({id:st+m.id,p1:m.player1?.name||null,p2:m.status==='bye'?null:(m.player2?.name||null),winner:m.winner?.name||null});
+  });
+  return {rounds};
 }
 async function loadBracketRounds(){
   const msg=document.getElementById('nr-bracket-msg'),sel=document.getElementById('nr-bracket-round');
@@ -2017,7 +2030,7 @@ function fillFromBracket(){
   ms.forEach(x=>{_nrBracketMap[norm(x.p1)+'|'+norm(x.p2)]=x.id;});
   document.getElementById('nr-label').value=r.label||r.key||'';
   _nrPrefixTouched=false;_nrLabelInput();
-  const bo=parseInt(r.bestOf)||1;document.getElementById('nr-bo').value=[1,3,5].includes(bo)?String(bo):'1';
+  const bo=parseInt(r.bestOf);if([1,3,5].includes(bo)) document.getElementById('nr-bo').value=String(bo); // otherwise keep what you picked
   document.getElementById('nr-pairs').value=ms.map(x=>x.p1+' vs '+x.p2).join('\n');
   const msg=document.getElementById('nr-bracket-msg');
   if(msg) msg.textContent='Filled '+ms.length+' pairing(s)'+(byes?' ('+byes+' bye(s) skipped — no betting on a bye)':'')+'. Check them, then click Add round.';
