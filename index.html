@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- NINELIVES v20261016-1 -->
+<!-- NINELIVES v20261016-2 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -318,7 +318,7 @@ const _app = initializeApp({
 const _db = getFirestore(_app);
 
 // Bump this on every upload — open tabs on an older version reload themselves.
-const APP_VERSION='20261016-1';
+const APP_VERSION='20261016-2';
 const ADMIN_PW_DEFAULT = "catwins2024";
 
 // ── LANGUAGES ──────────────────────────────
@@ -1026,8 +1026,10 @@ function renderPMatches(){
 
 // ── PLAYER: LEADERBOARD ──────────────────────
 let _lbSort='desc';
+// Hidden rounds are remembered on this device, so they stay hidden after a refresh or re-login
 let _collapsedCats=new Set();
-function _toggleCat(key,fn){if(_collapsedCats.has(key))_collapsedCats.delete(key);else _collapsedCats.add(key);fn();}
+try{_collapsedCats=new Set(JSON.parse(localStorage.getItem('ninelives-collapsed')||'[]'));}catch(e){}
+function _toggleCat(key,fn){if(_collapsedCats.has(key))_collapsedCats.delete(key);else _collapsedCats.add(key);try{localStorage.setItem('ninelives-collapsed',JSON.stringify([..._collapsedCats]));}catch(e){}fn();}
 // Thin wrappers so onclick attributes stay quote-safe
 function _tcP(k){_toggleCat(k,renderPMatches);}
 function _tcA(k){_toggleCat(k,renderAMatches);}
